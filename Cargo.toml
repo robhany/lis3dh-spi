@@ -1,0 +1,15 @@
+[package]
+name = "lis3dh-spi"
+version = "0.1.0"
+authors = ["Robert Hanyecz <rh@wertschuetz.de>"]
+categories = ["embedded", "no-std"]
+description = "no_std driver for the ultra-low-power high-performance 3-axis \"nano\" accelerometer LIS3DH using SPI"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+documentation = "https://docs.rs/lis3dh-spi"
+edition = "2018"
+repository = "https://github.com/robhany/lis3dh-spi"
+
+
+[dependencies]
+embedded-hal = "0.2.5"
