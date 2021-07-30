@@ -189,6 +189,75 @@ impl Lis3dh {
         Ok(())
     }
 
+    pub fn get_adc1_value<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<u16, Error<CsE, SpiE>>
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        self.get_adc_value(
+            cs,
+            spi,
+            RegisterAddresses::OutAdc1L as u8,
+            RegisterAddresses::OutAdc1H as u8,
+        )
+    }
+
+    pub fn get_adc2_value<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<u16, Error<CsE, SpiE>>
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        self.get_adc_value(
+            cs,
+            spi,
+            RegisterAddresses::OutAdc2L as u8,
+            RegisterAddresses::OutAdc2H as u8,
+        )
+    }
+    pub fn get_adc3_value<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<u16, Error<CsE, SpiE>>
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        self.get_adc_value(
+            cs,
+            spi,
+            RegisterAddresses::OutAdc3L as u8,
+            RegisterAddresses::OutAdc3H as u8,
+        )
+    }
+
+    pub fn get_adc_value<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+        low_byte_address: u8,
+        high_byte_address: u8,
+    ) -> Result<u16, Error<CsE, SpiE>>
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        let low_byte =
+            self.read_single_byte_from_spi(cs, spi, low_byte_address)?;
+        let high_byte =
+            self.read_single_byte_from_spi(cs, spi, high_byte_address)?;
+
+        Ok(((high_byte as u16) << 8) | low_byte as u16)
+    }
+
     fn read_single_byte_from_spi<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
