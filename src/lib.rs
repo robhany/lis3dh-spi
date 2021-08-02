@@ -76,6 +76,7 @@ fn check_if_bit_is_set(value: u8, bit_position: u8) -> bool {
 }
 
 #[repr(u8)]
+#[derive(Copy, Clone)]
 pub enum CtrReg0Value {
     PullUpConnectedSdoSa0Pin,
     PullUpDisconnectedSdoSa0Pin = 16,
@@ -182,6 +183,29 @@ pub struct Lis3dh {
 }
 
 impl Lis3dh {
+    pub fn set_ctrl_reg0(&mut self, ctrl_reg0: CtrReg0Value) {
+        self.ctrl_reg0 = ctrl_reg0;
+    }
+
+    pub fn write_all_settings<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<(), Error<CsE, SpiE>>
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        self.write_to_spi(
+            cs,
+            spi,
+            [
+                RegisterAddresses::CtrlReg0 as u8 | SPI_WRITE_BIT,
+                self.ctrl_reg0 as u8,
+            ],
+        )
+    }
+
     pub fn get_ctrl_reg_0_value<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
