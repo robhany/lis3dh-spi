@@ -1,10 +1,17 @@
 #![no_std]
+
+mod ctrl_reg_0_value;
+mod status_reg_aux_values;
+mod temp_cfg_reg;
+
+use ctrl_reg_0_value::CtrlReg0Value;
 extern crate embedded_hal as hal;
-use crate::TempEn::TemperatureDisabled;
 use hal::{
     blocking::spi::{Transfer, Write},
     digital::v2::OutputPin,
 };
+use status_reg_aux_values::StatusRegAuxValues;
+use temp_cfg_reg::TempCfgReg;
 
 const SPI_WRITE_BIT: u8 = 0x40;
 
@@ -76,174 +83,14 @@ fn check_if_bit_is_set(value: u8, bit_position: u8) -> bool {
     ((value >> bit_position) & 0b1).eq(&0b1)
 }
 
-#[repr(u8)]
-#[derive(Copy, Clone)]
-pub enum CtrReg0Value {
-    PullUpConnectedSdoSa0Pin,
-    PullUpDisconnectedSdoSa0Pin = 16,
-}
-
-impl Default for CtrReg0Value {
-    fn default() -> Self {
-        CtrReg0Value::PullUpDisconnectedSdoSa0Pin
-    }
-}
-
-const TEMP_EN_BIT_OFFSET: u8 = 6;
-#[derive(PartialEq)]
-pub enum TempEn {
-    TemperatureDisabled,
-    TemperatureEnabled,
-}
-impl Default for TempEn {
-    fn default() -> Self {
-        TempEn::TemperatureDisabled
-    }
-}
-
-const ADC_EN_BIT_OFFSET: u8 = 7;
-#[derive(PartialEq)]
-pub enum AdcEn {
-    AdcDisabled,
-    AdcEnabled,
-}
-impl Default for AdcEn {
-    fn default() -> Self {
-        AdcEn::AdcDisabled
-    }
-}
-
-#[derive(Default)]
-pub struct TempCfgReg {
-    temp: TempEn,
-    adc: AdcEn,
-}
-
-impl TempCfgReg {
-    pub fn from_raw_value(value: u8) -> Self {
-        let temp = if value >> TEMP_EN_BIT_OFFSET & 1 == 1 {
-            TempEn::TemperatureEnabled
-        } else {
-            TemperatureDisabled
-        };
-        let adc = if value >> ADC_EN_BIT_OFFSET & 1 == 1 {
-            AdcEn::AdcEnabled
-        } else {
-            AdcEn::AdcDisabled
-        };
-        TempCfgReg { temp, adc }
-    }
-
-    fn get_raw_value(&self) -> u8 {
-        let mut result = 0_u8;
-        if self.adc == AdcEn::AdcEnabled {
-            result += 1 << ADC_EN_BIT_OFFSET;
-        }
-        if self.temp == TempEn::TemperatureEnabled {
-            result += TEMP_EN_BIT_OFFSET << 1;
-        }
-
-        result
-    }
-}
-
-enum StatusRegAuxDataBitOffset {
-    NewDataOn1Axis,
-    NewDataOn2Axis,
-    NewDataOn3Axis,
-    NewDataOn3_2_1Axis,
-    OverrunOn1Axis,
-    OverrunOn2Axis,
-    OverrunOn3Axis,
-    OverrunOn3_2_1Axis,
-}
-
-#[derive(Default)]
-pub struct StatusRegAuxValues {
-    new_data_on1axis: bool,
-    new_data_on2axis: bool,
-    new_data_on3axis: bool,
-    new_data_on3_2_1axis: bool,
-    overrun_on1axis: bool,
-    overrun_on2axis: bool,
-    overrun_on3axis: bool,
-    overrun_on3_2_1axis: bool,
-    overrun_or_new_data: bool,
-}
-
-impl StatusRegAuxValues {
-    pub fn has_overrun_or_new_data(&self) -> bool {
-        self.overrun_or_new_data
-    }
-    pub fn has_new_data_on1axis(&self) -> bool {
-        self.new_data_on1axis
-    }
-    pub fn has_new_data_on2axis(&self) -> bool {
-        self.new_data_on2axis
-    }
-    pub fn has_new_data_on3axis(&self) -> bool {
-        self.new_data_on3axis
-    }
-    pub fn has_new_data_on3_2_1axis(&self) -> bool {
-        self.new_data_on3_2_1axis
-    }
-    pub fn has_overrun_on1axis(&self) -> bool {
-        self.overrun_on1axis
-    }
-    pub fn has_overrun_on2axis(&self) -> bool {
-        self.overrun_on2axis
-    }
-    pub fn has_overrun_on3axis(&self) -> bool {
-        self.overrun_on3axis
-    }
-    pub fn has_overrun_on3_2_1axis(&self) -> bool {
-        self.overrun_on3_2_1axis
-    }
-    fn update_values_with_spi_result(&mut self, value: u8) {
-        self.new_data_on1axis = check_if_bit_is_set(
-            value,
-            StatusRegAuxDataBitOffset::NewDataOn1Axis as u8,
-        );
-        self.new_data_on2axis = check_if_bit_is_set(
-            value,
-            StatusRegAuxDataBitOffset::NewDataOn2Axis as u8,
-        );
-        self.new_data_on3axis = check_if_bit_is_set(
-            value,
-            StatusRegAuxDataBitOffset::NewDataOn3Axis as u8,
-        );
-        self.new_data_on3_2_1axis = check_if_bit_is_set(
-            value,
-            StatusRegAuxDataBitOffset::NewDataOn3_2_1Axis as u8,
-        );
-        self.overrun_on1axis = check_if_bit_is_set(
-            value,
-            StatusRegAuxDataBitOffset::OverrunOn1Axis as u8,
-        );
-        self.overrun_on2axis = check_if_bit_is_set(
-            value,
-            StatusRegAuxDataBitOffset::OverrunOn2Axis as u8,
-        );
-        self.overrun_on3axis = check_if_bit_is_set(
-            value,
-            StatusRegAuxDataBitOffset::OverrunOn3Axis as u8,
-        );
-        self.overrun_on3_2_1axis = check_if_bit_is_set(
-            value,
-            StatusRegAuxDataBitOffset::OverrunOn3_2_1Axis as u8,
-        );
-        self.overrun_or_new_data = value > 0;
-    }
-}
-
 #[derive(Default)]
 pub struct Lis3dh {
-    ctrl_reg0: CtrReg0Value,
+    ctrl_reg0: CtrlReg0Value,
     temp_cfg_reg: TempCfgReg,
 }
 
 impl Lis3dh {
-    pub fn set_ctrl_reg0(&mut self, ctrl_reg0: CtrReg0Value) {
+    pub fn set_ctrl_reg0(&mut self, ctrl_reg0: CtrlReg0Value) {
         self.ctrl_reg0 = ctrl_reg0;
     }
 
@@ -299,7 +146,7 @@ impl Lis3dh {
         &mut self,
         cs: &mut CS,
         spi: &mut SPI,
-    ) -> Result<CtrReg0Value, Error<CsE, SpiE>>
+    ) -> Result<CtrlReg0Value, Error<CsE, SpiE>>
     where
         CS: OutputPin<Error = CsE>,
         SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
@@ -309,10 +156,10 @@ impl Lis3dh {
             spi,
             RegisterAddresses::CtrlReg0 as u8,
         )?;
-        if value == CtrReg0Value::PullUpDisconnectedSdoSa0Pin as u8 {
-            return Ok(CtrReg0Value::PullUpDisconnectedSdoSa0Pin);
+        if value == CtrlReg0Value::PullUpDisconnectedSdoSa0Pin as u8 {
+            return Ok(CtrlReg0Value::PullUpDisconnectedSdoSa0Pin);
         }
-        Ok(CtrReg0Value::PullUpDisconnectedSdoSa0Pin)
+        Ok(CtrlReg0Value::PullUpDisconnectedSdoSa0Pin)
     }
 
     pub fn get_status_reg_aux_values<CS, SPI, CsE, SpiE>(
@@ -329,9 +176,7 @@ impl Lis3dh {
             spi,
             RegisterAddresses::StatusRegAux as u8,
         )?;
-        let mut status_reg_aux_values = StatusRegAuxValues::default();
-        status_reg_aux_values.update_values_with_spi_result(value);
-        Ok(status_reg_aux_values)
+        Ok(StatusRegAuxValues::from_raw_value(value))
     }
 
     pub fn get_adc1_value<CS, SPI, CsE, SpiE>(
@@ -462,19 +307,5 @@ mod tests {
     #[test]
     fn checking_if_a_register_is_read_only_works() {
         assert!(super::is_read_only(super::RegisterAddresses::FifSrcReg));
-    }
-
-    #[test]
-    fn conversion_from_raw_value_to_status_reg_aux_values_works() {
-        let mut status_reg_aux_values = super::StatusRegAuxValues::default();
-        let raw_value_with_2_axis_overrun_and_1_new_data_available =
-            0b100001_u8;
-        status_reg_aux_values.update_values_with_spi_result(
-            raw_value_with_2_axis_overrun_and_1_new_data_available,
-        );
-        assert!(status_reg_aux_values.overrun_or_new_data);
-        assert!(status_reg_aux_values.new_data_on1axis);
-        assert!(status_reg_aux_values.overrun_on2axis);
-        assert!(!status_reg_aux_values.overrun_on3_2_1axis);
     }
 }
