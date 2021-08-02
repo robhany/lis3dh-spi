@@ -1,5 +1,6 @@
 #![no_std]
 extern crate embedded_hal as hal;
+use crate::TempEn::TemperatureDisabled;
 use hal::{
     blocking::spi::{Transfer, Write},
     digital::v2::OutputPin,
@@ -85,6 +86,64 @@ pub enum CtrReg0Value {
 impl Default for CtrReg0Value {
     fn default() -> Self {
         CtrReg0Value::PullUpDisconnectedSdoSa0Pin
+    }
+}
+
+const TEMP_EN_BIT_OFFSET: u8 = 6;
+#[derive(PartialEq)]
+pub enum TempEn {
+    TemperatureDisabled,
+    TemperatureEnabled,
+}
+impl Default for TempEn {
+    fn default() -> Self {
+        TempEn::TemperatureDisabled
+    }
+}
+
+const ADC_EN_BIT_OFFSET: u8 = 7;
+#[derive(PartialEq)]
+pub enum AdcEn {
+    AdcDisabled,
+    AdcEnabled,
+}
+impl Default for AdcEn {
+    fn default() -> Self {
+        AdcEn::AdcDisabled
+    }
+}
+
+#[derive(Default)]
+pub struct TempCfgReg {
+    temp: TempEn,
+    adc: AdcEn,
+}
+
+impl TempCfgReg {
+    pub fn from_raw_value(value: u8) -> Self {
+        let temp = if value >> TEMP_EN_BIT_OFFSET & 1 == 1 {
+            TempEn::TemperatureEnabled
+        } else {
+            TemperatureDisabled
+        };
+        let adc = if value >> ADC_EN_BIT_OFFSET & 1 == 1 {
+            AdcEn::AdcEnabled
+        } else {
+            AdcEn::AdcDisabled
+        };
+        TempCfgReg { temp, adc }
+    }
+
+    fn get_raw_value(&self) -> u8 {
+        let mut result = 0_u8;
+        if self.adc == AdcEn::AdcEnabled {
+            result += 1 << ADC_EN_BIT_OFFSET;
+        }
+        if self.temp == TempEn::TemperatureEnabled {
+            result += TEMP_EN_BIT_OFFSET << 1;
+        }
+
+        result
     }
 }
 
@@ -180,11 +239,16 @@ impl StatusRegAuxValues {
 #[derive(Default)]
 pub struct Lis3dh {
     ctrl_reg0: CtrReg0Value,
+    temp_cfg_reg: TempCfgReg,
 }
 
 impl Lis3dh {
     pub fn set_ctrl_reg0(&mut self, ctrl_reg0: CtrReg0Value) {
         self.ctrl_reg0 = ctrl_reg0;
+    }
+
+    pub fn set_temp_cfg_reg(&mut self, temp_cfg_reg: TempCfgReg) {
+        self.temp_cfg_reg = temp_cfg_reg;
     }
 
     pub fn write_all_settings<CS, SPI, CsE, SpiE>(
@@ -203,7 +267,32 @@ impl Lis3dh {
                 RegisterAddresses::CtrlReg0 as u8 | SPI_WRITE_BIT,
                 self.ctrl_reg0 as u8,
             ],
+        )?;
+        self.write_to_spi(
+            cs,
+            spi,
+            [
+                RegisterAddresses::TempCfgReg as u8 | SPI_WRITE_BIT,
+                self.temp_cfg_reg.get_raw_value(),
+            ],
         )
+    }
+
+    pub fn get_temp_cfg_reg<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<TempCfgReg, Error<CsE, SpiE>>
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        let value = self.read_single_byte_from_spi(
+            cs,
+            spi,
+            RegisterAddresses::TempCfgReg as u8,
+        )?;
+        Ok(TempCfgReg::from_raw_value(value))
     }
 
     pub fn get_ctrl_reg_0_value<CS, SPI, CsE, SpiE>(
@@ -278,6 +367,7 @@ impl Lis3dh {
             RegisterAddresses::OutAdc2H as u8,
         )
     }
+
     pub fn get_adc3_value<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
