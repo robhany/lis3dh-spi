@@ -1,6 +1,5 @@
 #![no_std]
 extern crate embedded_hal as hal;
-
 use hal::{
     blocking::spi::{Transfer, Write},
     digital::v2::OutputPin,
@@ -76,6 +75,18 @@ fn check_if_bit_is_set(value: u8, bit_position: u8) -> bool {
     ((value >> bit_position) & 0b1).eq(&0b1)
 }
 
+#[repr(u8)]
+pub enum CtrReg0Value {
+    PullUpConnectedSdoSa0Pin,
+    PullUpDisconnectedSdoSa0Pin = 16,
+}
+
+impl Default for CtrReg0Value {
+    fn default() -> Self {
+        CtrReg0Value::PullUpDisconnectedSdoSa0Pin
+    }
+}
+
 enum StatusRegAuxDataBitOffset {
     NewDataOn1Axis,
     NewDataOn2Axis,
@@ -88,7 +99,7 @@ enum StatusRegAuxDataBitOffset {
 }
 
 #[derive(Default)]
-struct StatusRegAuxValues {
+pub struct StatusRegAuxValues {
     new_data_on1axis: bool,
     new_data_on2axis: bool,
     new_data_on3axis: bool,
@@ -167,15 +178,35 @@ impl StatusRegAuxValues {
 
 #[derive(Default)]
 pub struct Lis3dh {
-    status_reg_aux: StatusRegAuxValues,
+    ctrl_reg0: CtrReg0Value,
 }
 
 impl Lis3dh {
-    pub fn update_status_reg_aux<CS, SPI, CsE, SpiE>(
+    pub fn get_ctrl_reg_0_value<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
         spi: &mut SPI,
-    ) -> Result<(), Error<CsE, SpiE>>
+    ) -> Result<CtrReg0Value, Error<CsE, SpiE>>
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        let value = self.read_single_byte_from_spi(
+            cs,
+            spi,
+            RegisterAddresses::CtrlReg0 as u8,
+        )?;
+        if value == CtrReg0Value::PullUpDisconnectedSdoSa0Pin as u8 {
+            return Ok(CtrReg0Value::PullUpDisconnectedSdoSa0Pin);
+        }
+        Ok(CtrReg0Value::PullUpDisconnectedSdoSa0Pin)
+    }
+
+    pub fn get_status_reg_aux_values<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<StatusRegAuxValues, Error<CsE, SpiE>>
     where
         CS: OutputPin<Error = CsE>,
         SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
@@ -185,8 +216,9 @@ impl Lis3dh {
             spi,
             RegisterAddresses::StatusRegAux as u8,
         )?;
-        self.status_reg_aux.update_values_with_spi_result(value);
-        Ok(())
+        let mut status_reg_aux_values = StatusRegAuxValues::default();
+        status_reg_aux_values.update_values_with_spi_result(value);
+        Ok(status_reg_aux_values)
     }
 
     pub fn get_adc1_value<CS, SPI, CsE, SpiE>(
@@ -256,6 +288,18 @@ impl Lis3dh {
             self.read_single_byte_from_spi(cs, spi, high_byte_address)?;
 
         Ok(((high_byte as u16) << 8) | low_byte as u16)
+    }
+
+    pub fn get_who_am_i<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<u8, Error<CsE, SpiE>>
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        self.read_single_byte_from_spi(cs, spi, RegisterAddresses::WhoAmI as u8)
     }
 
     fn read_single_byte_from_spi<CS, SPI, CsE, SpiE>(
