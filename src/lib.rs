@@ -1,11 +1,15 @@
 #![no_std]
-
 mod ctrl_reg_0_value;
+mod ctrl_reg_1_value;
 mod status_reg_aux_values;
 mod temp_cfg_reg;
 
-use ctrl_reg_0_value::CtrlReg0Value;
+#[macro_use]
+extern crate num_derive;
 extern crate embedded_hal as hal;
+
+use ctrl_reg_0_value::CtrlReg0Value;
+use ctrl_reg_1_value::CtrlReg1Value;
 use hal::{
     blocking::spi::{Transfer, Write},
     digital::v2::OutputPin,
@@ -87,6 +91,7 @@ fn check_if_bit_is_set(value: u8, bit_position: u8) -> bool {
 pub struct Lis3dh {
     ctrl_reg0: CtrlReg0Value,
     temp_cfg_reg: TempCfgReg,
+    ctrl_reg1: CtrlReg1Value,
 }
 
 impl Lis3dh {
@@ -121,6 +126,14 @@ impl Lis3dh {
             [
                 RegisterAddresses::TempCfgReg as u8 | SPI_WRITE_BIT,
                 self.temp_cfg_reg.get_raw_value(),
+            ],
+        )?;
+        self.write_to_spi(
+            cs,
+            spi,
+            [
+                RegisterAddresses::CtrlReg1 as u8 | SPI_WRITE_BIT,
+                self.ctrl_reg1.get_raw_value(),
             ],
         )
     }
@@ -160,6 +173,23 @@ impl Lis3dh {
             return Ok(CtrlReg0Value::PullUpDisconnectedSdoSa0Pin);
         }
         Ok(CtrlReg0Value::PullUpDisconnectedSdoSa0Pin)
+    }
+
+    pub fn get_ctrl_reg_1_value<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<CtrlReg1Value, Error<CsE, SpiE>>
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        let value = self.read_single_byte_from_spi(
+            cs,
+            spi,
+            RegisterAddresses::CtrlReg1 as u8,
+        )?;
+        Ok(CtrlReg1Value::from_raw_value(value))
     }
 
     pub fn get_status_reg_aux_values<CS, SPI, CsE, SpiE>(
@@ -230,7 +260,7 @@ impl Lis3dh {
         )
     }
 
-    pub fn get_adc_value<CS, SPI, CsE, SpiE>(
+    fn get_adc_value<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
         spi: &mut SPI,

@@ -93,11 +93,10 @@ impl StatusRegAuxValues {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn conversion_from_raw_value_to_status_reg_aux_values_works() {
-        let mut status_reg_aux_values = super::StatusRegAuxValues::default();
+    fn conversion_from_raw_value_works() {
         let raw_value_with_2_axis_overrun_and_1_new_data_available =
             0b100001_u8;
-        status_reg_aux_values.from_raw_value(
+        let status_reg_aux_values = super::StatusRegAuxValues::from_raw_value(
             raw_value_with_2_axis_overrun_and_1_new_data_available,
         );
         assert!(status_reg_aux_values.overrun_or_new_data);

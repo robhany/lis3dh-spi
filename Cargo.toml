@@ -13,3 +13,5 @@ repository = "https://github.com/robhany/lis3dh-spi"
 
 [dependencies]
 embedded-hal = "0.2.5"
+num-traits = "0.2"
+num-derive = "0.3"
