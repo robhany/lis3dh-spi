@@ -1,3 +1,4 @@
+#[repr(u8)]
 enum StatusRegAuxDataBitOffset {
     NewDataOn1Axis,
     NewDataOn2Axis,
@@ -51,41 +52,41 @@ impl StatusRegAuxValues {
         self.overrun_on3_2_1axis
     }
     pub(super) fn from_raw_value(value: u8) -> Self {
-        let mut result = StatusRegAuxValues::default();
-        result.new_data_on1axis = super::check_if_bit_is_set(
-            value,
-            StatusRegAuxDataBitOffset::NewDataOn1Axis as u8,
-        );
-        result.new_data_on2axis = super::check_if_bit_is_set(
-            value,
-            StatusRegAuxDataBitOffset::NewDataOn2Axis as u8,
-        );
-        result.new_data_on3axis = super::check_if_bit_is_set(
-            value,
-            StatusRegAuxDataBitOffset::NewDataOn3Axis as u8,
-        );
-        result.new_data_on3_2_1axis = super::check_if_bit_is_set(
-            value,
-            StatusRegAuxDataBitOffset::NewDataOn3_2_1Axis as u8,
-        );
-        result.overrun_on1axis = super::check_if_bit_is_set(
-            value,
-            StatusRegAuxDataBitOffset::OverrunOn1Axis as u8,
-        );
-        result.overrun_on2axis = super::check_if_bit_is_set(
-            value,
-            StatusRegAuxDataBitOffset::OverrunOn2Axis as u8,
-        );
-        result.overrun_on3axis = super::check_if_bit_is_set(
-            value,
-            StatusRegAuxDataBitOffset::OverrunOn3Axis as u8,
-        );
-        result.overrun_on3_2_1axis = super::check_if_bit_is_set(
-            value,
-            StatusRegAuxDataBitOffset::OverrunOn3_2_1Axis as u8,
-        );
-        result.overrun_or_new_data = value > 0;
-        result
+        StatusRegAuxValues {
+            new_data_on1axis: super::check_if_bit_is_set(
+                value,
+                StatusRegAuxDataBitOffset::NewDataOn1Axis as u8,
+            ),
+            new_data_on2axis: super::check_if_bit_is_set(
+                value,
+                StatusRegAuxDataBitOffset::NewDataOn2Axis as u8,
+            ),
+            new_data_on3axis: super::check_if_bit_is_set(
+                value,
+                StatusRegAuxDataBitOffset::NewDataOn3Axis as u8,
+            ),
+            new_data_on3_2_1axis: super::check_if_bit_is_set(
+                value,
+                StatusRegAuxDataBitOffset::NewDataOn3_2_1Axis as u8,
+            ),
+            overrun_on1axis: super::check_if_bit_is_set(
+                value,
+                StatusRegAuxDataBitOffset::OverrunOn1Axis as u8,
+            ),
+            overrun_on2axis: super::check_if_bit_is_set(
+                value,
+                StatusRegAuxDataBitOffset::OverrunOn2Axis as u8,
+            ),
+            overrun_on3axis: super::check_if_bit_is_set(
+                value,
+                StatusRegAuxDataBitOffset::OverrunOn3Axis as u8,
+            ),
+            overrun_on3_2_1axis: super::check_if_bit_is_set(
+                value,
+                StatusRegAuxDataBitOffset::OverrunOn3_2_1Axis as u8,
+            ),
+            overrun_or_new_data: value > 0,
+        }
     }
 }
 

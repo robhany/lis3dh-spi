@@ -1,6 +1,6 @@
-
 const TEMP_EN_BIT_OFFSET: u8 = 6;
 #[derive(PartialEq)]
+#[repr(u8)]
 pub enum TempEn {
     TemperatureDisabled,
     TemperatureEnabled,
@@ -13,6 +13,7 @@ impl Default for TempEn {
 
 const ADC_EN_BIT_OFFSET: u8 = 7;
 #[derive(PartialEq)]
+#[repr(u8)]
 pub enum AdcEn {
     AdcDisabled,
     AdcEnabled,
@@ -52,7 +53,6 @@ impl TempCfgReg {
         if self.temp == TempEn::TemperatureEnabled {
             result += TEMP_EN_BIT_OFFSET << 1;
         }
-
         result
     }
 }
