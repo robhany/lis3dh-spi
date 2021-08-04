@@ -14,6 +14,8 @@ use hal::{
     blocking::spi::{Transfer, Write},
     digital::v2::OutputPin,
 };
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
 use status_reg_aux_values::StatusRegAuxValues;
 use temp_cfg_reg::TempCfgReg;
 
@@ -26,7 +28,7 @@ pub enum Error<CsE, SpiE> {
 }
 
 #[repr(u8)]
-#[derive(PartialOrd, PartialEq)]
+#[derive(FromPrimitive, PartialOrd, PartialEq)]
 enum RegisterAddresses {
     StatusRegAux = 0x07,
     OutAdc1L,
@@ -72,15 +74,17 @@ enum RegisterAddresses {
     ActivationDuration,
 }
 
-fn is_read_only(address: RegisterAddresses) -> bool {
+fn is_read_only(mut address: u8) -> bool {
+    address &= !SPI_WRITE_BIT;
+    let register = RegisterAddresses::from_u8(address).unwrap();
     (RegisterAddresses::StatusRegAux..RegisterAddresses::WhoAmI)
-        .contains(&address)
+        .contains(&register)
         || (RegisterAddresses::StatusReg..RegisterAddresses::OutZH)
-            .contains(&address)
-        || RegisterAddresses::FifSrcReg.eq(&address)
-        || RegisterAddresses::Int1Src.eq(&address)
-        || RegisterAddresses::Int2Src.eq(&address)
-        || RegisterAddresses::ClickSrc.eq(&address)
+            .contains(&register)
+        || RegisterAddresses::FifSrcReg.eq(&register)
+        || RegisterAddresses::Int1Src.eq(&register)
+        || RegisterAddresses::Int2Src.eq(&register)
+        || RegisterAddresses::ClickSrc.eq(&register)
 }
 
 fn check_if_bit_is_set(value: u8, bit_position: u8) -> bool {
@@ -318,6 +322,9 @@ impl Lis3dh {
         CS: OutputPin<Error = CsE>,
         SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
     {
+        if is_read_only(*data.first().unwrap()) {
+            panic!("Attempt to write to a read only register");
+        }
         cs.set_low().map_err(Error::ChipSelectError)?;
         spi.write(&data).map_err(Error::SpiError)?;
         cs.set_high().map_err(Error::ChipSelectError)?;
@@ -336,6 +343,21 @@ mod tests {
 
     #[test]
     fn checking_if_a_register_is_read_only_works() {
-        assert!(super::is_read_only(super::RegisterAddresses::FifSrcReg));
+        assert!(super::is_read_only(
+            super::RegisterAddresses::FifSrcReg as u8
+        ));
+        assert!(!super::is_read_only(
+            super::RegisterAddresses::CtrlReg1 as u8
+        ));
+    }
+
+    #[test]
+    fn checking_if_a_register_is_read_only_works_with_set_write_bit() {
+        assert!(super::is_read_only(
+            super::RegisterAddresses::FifSrcReg as u8 | super::SPI_WRITE_BIT
+        ));
+        assert!(!super::is_read_only(
+            super::RegisterAddresses::CtrlReg1 as u8 | super::SPI_WRITE_BIT
+        ));
     }
 }
