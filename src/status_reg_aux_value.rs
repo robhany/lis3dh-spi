@@ -11,7 +11,7 @@ enum StatusRegAuxDataBitOffset {
 }
 
 #[derive(Default)]
-pub struct StatusRegAuxValues {
+pub struct StatusRegAuxValue {
     new_data_on1axis: bool,
     new_data_on2axis: bool,
     new_data_on3axis: bool,
@@ -23,7 +23,7 @@ pub struct StatusRegAuxValues {
     overrun_or_new_data: bool,
 }
 
-impl StatusRegAuxValues {
+impl StatusRegAuxValue {
     pub fn has_overrun_or_new_data(&self) -> bool {
         self.overrun_or_new_data
     }
@@ -52,7 +52,7 @@ impl StatusRegAuxValues {
         self.overrun_on3_2_1axis
     }
     pub(super) fn from_raw_value(value: u8) -> Self {
-        StatusRegAuxValues {
+        StatusRegAuxValue {
             new_data_on1axis: super::check_if_bit_is_set(
                 value,
                 StatusRegAuxDataBitOffset::NewDataOn1Axis as u8,
@@ -96,7 +96,7 @@ mod tests {
     fn conversion_from_raw_value_works() {
         let raw_value_with_2_axis_overrun_and_1_new_data_available =
             0b100001_u8;
-        let status_reg_aux_values = super::StatusRegAuxValues::from_raw_value(
+        let status_reg_aux_values = super::StatusRegAuxValue::from_raw_value(
             raw_value_with_2_axis_overrun_and_1_new_data_available,
         );
         assert!(status_reg_aux_values.overrun_or_new_data);

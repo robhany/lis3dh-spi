@@ -1,7 +1,7 @@
 #![no_std]
 mod ctrl_reg_0_value;
 mod ctrl_reg_1_value;
-mod status_reg_aux_values;
+mod status_reg_aux_value;
 mod temp_cfg_reg_values;
 
 #[macro_use]
@@ -16,7 +16,7 @@ use hal::{
 };
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
-use status_reg_aux_values::StatusRegAuxValues;
+use status_reg_aux_value::StatusRegAuxValue;
 use temp_cfg_reg_values::TempCfgRegValue;
 
 const SPI_WRITE_BIT: u8 = 0x40;
@@ -200,7 +200,7 @@ impl Lis3dh {
         &mut self,
         cs: &mut CS,
         spi: &mut SPI,
-    ) -> Result<StatusRegAuxValues, Error<CsE, SpiE>>
+    ) -> Result<StatusRegAuxValue, Error<CsE, SpiE>>
     where
         CS: OutputPin<Error = CsE>,
         SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
@@ -210,7 +210,7 @@ impl Lis3dh {
             spi,
             RegisterAddresses::StatusRegAux as u8,
         )?;
-        Ok(StatusRegAuxValues::from_raw_value(value))
+        Ok(StatusRegAuxValue::from_raw_value(value))
     }
 
     pub fn get_adc1_value<CS, SPI, CsE, SpiE>(
