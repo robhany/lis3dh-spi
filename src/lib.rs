@@ -1,6 +1,7 @@
 #![no_std]
 mod ctrl_reg_0_value;
 mod ctrl_reg_1_value;
+mod ctrl_reg_2_value;
 mod status_reg_aux_value;
 mod temp_cfg_reg_values;
 
@@ -10,6 +11,7 @@ extern crate embedded_hal as hal;
 
 use ctrl_reg_0_value::CtrlReg0Value;
 use ctrl_reg_1_value::CtrlReg1Value;
+use ctrl_reg_2_value::CtrlReg2Value;
 use hal::{
     blocking::spi::{Transfer, Write},
     digital::v2::OutputPin,
@@ -96,15 +98,24 @@ pub struct Lis3dh {
     ctrl_reg0: CtrlReg0Value,
     temp_cfg_reg: TempCfgRegValue,
     ctrl_reg1: CtrlReg1Value,
+    ctrl_reg2: CtrlReg2Value,
 }
 
 impl Lis3dh {
-    pub fn set_ctrl_reg0(&mut self, ctrl_reg0: CtrlReg0Value) {
-        self.ctrl_reg0 = ctrl_reg0;
+    pub fn set_ctrl_reg0(&mut self, value: CtrlReg0Value) {
+        self.ctrl_reg0 = value;
     }
 
-    pub fn set_temp_cfg_reg(&mut self, temp_cfg_reg: TempCfgRegValue) {
-        self.temp_cfg_reg = temp_cfg_reg;
+    pub fn set_temp_cfg_reg(&mut self, value: TempCfgRegValue) {
+        self.temp_cfg_reg = value;
+    }
+
+    pub fn set_ctrl_reg1(&mut self, value: CtrlReg1Value) {
+        self.ctrl_reg1 = value;
+    }
+
+    pub fn set_ctrl_reg2(&mut self, value: CtrlReg2Value) {
+        self.ctrl_reg2 = value;
     }
 
     pub fn write_all_settings<CS, SPI, CsE, SpiE>(
@@ -139,7 +150,32 @@ impl Lis3dh {
                 RegisterAddresses::CtrlReg1 as u8 | SPI_WRITE_BIT,
                 self.ctrl_reg1.get_raw_value(),
             ],
+        )?;
+        self.write_to_spi(
+            cs,
+            spi,
+            [
+                RegisterAddresses::CtrlReg2 as u8 | SPI_WRITE_BIT,
+                self.ctrl_reg2.get_raw_value(),
+            ],
         )
+    }
+
+    pub fn get_ctrl_reg_2_value<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<CtrlReg2Value, Error<CsE, SpiE>>
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        let value = self.read_single_byte_from_spi(
+            cs,
+            spi,
+            RegisterAddresses::CtrlReg2 as u8,
+        )?;
+        Ok(CtrlReg2Value::from_raw_value(value))
     }
 
     pub fn get_temp_cfg_reg<CS, SPI, CsE, SpiE>(
