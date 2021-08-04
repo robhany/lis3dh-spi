@@ -2,7 +2,7 @@
 mod ctrl_reg_0_value;
 mod ctrl_reg_1_value;
 mod status_reg_aux_values;
-mod temp_cfg_reg;
+mod temp_cfg_reg_values;
 
 #[macro_use]
 extern crate num_derive;
@@ -17,7 +17,7 @@ use hal::{
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use status_reg_aux_values::StatusRegAuxValues;
-use temp_cfg_reg::TempCfgReg;
+use temp_cfg_reg_values::TempCfgRegValue;
 
 const SPI_WRITE_BIT: u8 = 0x40;
 
@@ -94,7 +94,7 @@ fn check_if_bit_is_set(value: u8, bit_position: u8) -> bool {
 #[derive(Default)]
 pub struct Lis3dh {
     ctrl_reg0: CtrlReg0Value,
-    temp_cfg_reg: TempCfgReg,
+    temp_cfg_reg: TempCfgRegValue,
     ctrl_reg1: CtrlReg1Value,
 }
 
@@ -103,7 +103,7 @@ impl Lis3dh {
         self.ctrl_reg0 = ctrl_reg0;
     }
 
-    pub fn set_temp_cfg_reg(&mut self, temp_cfg_reg: TempCfgReg) {
+    pub fn set_temp_cfg_reg(&mut self, temp_cfg_reg: TempCfgRegValue) {
         self.temp_cfg_reg = temp_cfg_reg;
     }
 
@@ -146,7 +146,7 @@ impl Lis3dh {
         &mut self,
         cs: &mut CS,
         spi: &mut SPI,
-    ) -> Result<TempCfgReg, Error<CsE, SpiE>>
+    ) -> Result<TempCfgRegValue, Error<CsE, SpiE>>
     where
         CS: OutputPin<Error = CsE>,
         SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
@@ -156,7 +156,7 @@ impl Lis3dh {
             spi,
             RegisterAddresses::TempCfgReg as u8,
         )?;
-        Ok(TempCfgReg::from_raw_value(value))
+        Ok(TempCfgRegValue::from_raw_value(value))
     }
 
     pub fn get_ctrl_reg_0_value<CS, SPI, CsE, SpiE>(

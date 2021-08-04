@@ -25,12 +25,12 @@ impl Default for AdcEn {
 }
 
 #[derive(Default)]
-pub struct TempCfgReg {
+pub struct TempCfgRegValue {
     temp: TempEn,
     adc: AdcEn,
 }
 
-impl TempCfgReg {
+impl TempCfgRegValue {
     pub fn from_raw_value(value: u8) -> Self {
         let temp = if value >> TEMP_EN_BIT_OFFSET & 1 == 1 {
             TempEn::TemperatureEnabled
@@ -42,7 +42,7 @@ impl TempCfgReg {
         } else {
             AdcEn::AdcDisabled
         };
-        TempCfgReg { temp, adc }
+        TempCfgRegValue { temp, adc }
     }
 
     pub(super) fn get_raw_value(&self) -> u8 {
