@@ -22,7 +22,7 @@ use hal::{
     blocking::spi::{Transfer, Write},
     digital::v2::OutputPin,
 };
-use micromath::vector::{F32x3, I16x3};
+use micromath::vector::{I32x3, I16x3};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use status_reg_aux_value::StatusRegAuxValue;
@@ -371,7 +371,7 @@ impl Lis3dh {
         &mut self,
         cs: &mut CS,
         spi: &mut SPI,
-    ) -> Result<F32x3, Error<CsE, SpiE>>
+    ) -> Result<I32x3, Error<CsE, SpiE>>
     where
         CS: OutputPin<Error = CsE>,
         SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
@@ -383,51 +383,51 @@ impl Lis3dh {
             (
                 mode::Mode::HighResolution,
                 ctrl_reg_4_value::FullScaleSelection::Gravity2G,
-            ) => 0.001,
+            ) => 1,
             (
                 mode::Mode::HighResolution,
                 ctrl_reg_4_value::FullScaleSelection::Gravity4G,
-            ) => 0.002,
+            ) => 1,
             (
                 mode::Mode::HighResolution,
                 ctrl_reg_4_value::FullScaleSelection::Gravity8G,
-            ) => 0.004,
+            ) => 4,
             (
                 mode::Mode::HighResolution,
                 ctrl_reg_4_value::FullScaleSelection::Gravity16G,
-            ) => 0.012,
+            ) => 12,
             (
                 mode::Mode::Normal,
                 ctrl_reg_4_value::FullScaleSelection::Gravity2G,
-            ) => 0.004,
+            ) => 4,
             (
                 mode::Mode::Normal,
                 ctrl_reg_4_value::FullScaleSelection::Gravity4G,
-            ) => 0.008,
+            ) => 8,
             (
                 mode::Mode::Normal,
                 ctrl_reg_4_value::FullScaleSelection::Gravity8G,
-            ) => 0.016,
+            ) => 16,
             (
                 mode::Mode::Normal,
                 ctrl_reg_4_value::FullScaleSelection::Gravity16G,
-            ) => 0.048,
+            ) => 48,
             (
                 mode::Mode::LowPower,
                 ctrl_reg_4_value::FullScaleSelection::Gravity2G,
-            ) => 0.016,
+            ) => 16,
             (
                 mode::Mode::LowPower,
                 ctrl_reg_4_value::FullScaleSelection::Gravity4G,
-            ) => 0.032,
+            ) => 32,
             (
                 mode::Mode::LowPower,
                 ctrl_reg_4_value::FullScaleSelection::Gravity8G,
-            ) => 0.064,
+            ) => 64,
             (
                 mode::Mode::LowPower,
                 ctrl_reg_4_value::FullScaleSelection::Gravity16G,
-            ) => 0.192,
+            ) => 192,
         };
 
         let shift: u8 = match mode {
@@ -437,11 +437,11 @@ impl Lis3dh {
         };
 
         let acc_raw = self.get_accel_raw(cs, spi)?;
-        let x = (acc_raw.x >> shift) as f32 * multiplier;
-        let y = (acc_raw.y >> shift) as f32 * multiplier;
-        let z = (acc_raw.z >> shift) as f32 * multiplier;
+        let x = (acc_raw.x >> shift) as i32 * multiplier;
+        let y = (acc_raw.y >> shift) as i32 * multiplier;
+        let z = (acc_raw.z >> shift) as i32 * multiplier;
 
-        Ok(F32x3 { x, y, z })
+        Ok(I32x3 { x, y, z })
     }
 
     fn get_adc_value<CS, SPI, CsE, SpiE>(
