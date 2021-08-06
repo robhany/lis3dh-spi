@@ -13,9 +13,7 @@ https://www.st.com/resource/en/datasheet/lis3dh.pdf
 
 
 ## About this driver
-This driver allows you to configure the ultra-low-power high-performance 3-axis \"nano\" accelerometer LIS3DH using SPI.
-If you want to use the LIS3DH via I²C, use the crate https://crates.io/crates/lis3dh.
-
+#TODO add Description
 ## Usage
 Add this to your Cargo.toml:
 
