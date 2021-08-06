@@ -3,21 +3,26 @@ mod ctrl_reg_0_value;
 mod ctrl_reg_1_value;
 mod ctrl_reg_2_value;
 mod ctrl_reg_3_value;
+mod ctrl_reg_4_value;
+mod enabled_enum;
+mod mode;
 mod status_reg_aux_value;
 mod temp_cfg_reg_value;
 
 #[macro_use]
 extern crate num_derive;
 extern crate embedded_hal as hal;
-
-use crate::ctrl_reg_3_value::CtrlReg3Value;
+use core::fmt::Debug;
 use ctrl_reg_0_value::CtrlReg0Value;
 use ctrl_reg_1_value::CtrlReg1Value;
 use ctrl_reg_2_value::CtrlReg2Value;
+use ctrl_reg_3_value::CtrlReg3Value;
+use ctrl_reg_4_value::CtrlReg4Value;
 use hal::{
     blocking::spi::{Transfer, Write},
     digital::v2::OutputPin,
 };
+use micromath::vector::{F32x3, I16x3};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use status_reg_aux_value::StatusRegAuxValue;
@@ -102,6 +107,7 @@ pub struct Lis3dh {
     ctrl_reg1: CtrlReg1Value,
     ctrl_reg2: CtrlReg2Value,
     ctrl_reg3: CtrlReg3Value,
+    ctrl_reg4: CtrlReg4Value,
 }
 
 impl Lis3dh {
@@ -123,6 +129,10 @@ impl Lis3dh {
 
     pub fn set_ctrl_reg3(&mut self, value: CtrlReg3Value) {
         self.ctrl_reg3 = value;
+    }
+
+    pub fn set_ctrl_reg4(&mut self, value: CtrlReg4Value) {
+        self.ctrl_reg4 = value;
     }
 
     pub fn write_all_settings<CS, SPI, CsE, SpiE>(
@@ -173,7 +183,32 @@ impl Lis3dh {
                 RegisterAddresses::CtrlReg3 as u8 | SPI_WRITE_BIT,
                 self.ctrl_reg3.get_raw_value(),
             ],
+        )?;
+        self.write_to_spi(
+            cs,
+            spi,
+            [
+                RegisterAddresses::CtrlReg4 as u8 | SPI_WRITE_BIT,
+                self.ctrl_reg4.get_raw_value(),
+            ],
         )
+    }
+
+    pub fn get_ctrl_reg_4_value<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<CtrlReg4Value, Error<CsE, SpiE>>
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        let value = self.read_single_byte_from_spi(
+            cs,
+            spi,
+            RegisterAddresses::CtrlReg4 as u8,
+        )?;
+        Ok(CtrlReg4Value::from_raw_value(value))
     }
 
     pub fn get_ctrl_reg_3_value<CS, SPI, CsE, SpiE>(
@@ -332,6 +367,83 @@ impl Lis3dh {
         )
     }
 
+    pub fn get_accel_norm<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<F32x3, Error<CsE, SpiE>>
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        let mode = self.get_mode(cs, spi)?;
+        let range = self.get_ctrl_reg_4_value(cs, spi)?.fs();
+
+        let multiplier = match (mode, range) {
+            (
+                mode::Mode::HighResolution,
+                ctrl_reg_4_value::FullScaleSelection::Gravity2G,
+            ) => 0.001,
+            (
+                mode::Mode::HighResolution,
+                ctrl_reg_4_value::FullScaleSelection::Gravity4G,
+            ) => 0.002,
+            (
+                mode::Mode::HighResolution,
+                ctrl_reg_4_value::FullScaleSelection::Gravity8G,
+            ) => 0.004,
+            (
+                mode::Mode::HighResolution,
+                ctrl_reg_4_value::FullScaleSelection::Gravity16G,
+            ) => 0.012,
+            (
+                mode::Mode::Normal,
+                ctrl_reg_4_value::FullScaleSelection::Gravity2G,
+            ) => 0.004,
+            (
+                mode::Mode::Normal,
+                ctrl_reg_4_value::FullScaleSelection::Gravity4G,
+            ) => 0.008,
+            (
+                mode::Mode::Normal,
+                ctrl_reg_4_value::FullScaleSelection::Gravity8G,
+            ) => 0.016,
+            (
+                mode::Mode::Normal,
+                ctrl_reg_4_value::FullScaleSelection::Gravity16G,
+            ) => 0.048,
+            (
+                mode::Mode::LowPower,
+                ctrl_reg_4_value::FullScaleSelection::Gravity2G,
+            ) => 0.016,
+            (
+                mode::Mode::LowPower,
+                ctrl_reg_4_value::FullScaleSelection::Gravity4G,
+            ) => 0.032,
+            (
+                mode::Mode::LowPower,
+                ctrl_reg_4_value::FullScaleSelection::Gravity8G,
+            ) => 0.064,
+            (
+                mode::Mode::LowPower,
+                ctrl_reg_4_value::FullScaleSelection::Gravity16G,
+            ) => 0.192,
+        };
+
+        let shift: u8 = match mode {
+            mode::Mode::HighResolution => 4, // High Resolution:  12-bit
+            mode::Mode::Normal => 6,         // Normal:           10-bit
+            mode::Mode::LowPower => 8,       // Low Power:         8-bit
+        };
+
+        let acc_raw = self.get_accel_raw(cs, spi)?;
+        let x = (acc_raw.x >> shift) as f32 * multiplier;
+        let y = (acc_raw.y >> shift) as f32 * multiplier;
+        let z = (acc_raw.z >> shift) as f32 * multiplier;
+
+        Ok(F32x3 { x, y, z })
+    }
+
     fn get_adc_value<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -397,6 +509,77 @@ impl Lis3dh {
         spi.write(&data).map_err(Error::SpiError)?;
         cs.set_high().map_err(Error::ChipSelectError)?;
         Ok(())
+    }
+
+    fn get_mode<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<mode::Mode, Error<CsE, SpiE>>
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        let low_power_set = self.get_ctrl_reg_1_value(cs, spi)?.l_p_en()
+            == ctrl_reg_1_value::LPEn::LowPowerEnabled;
+        let high_resolution_output_set =
+            self.get_ctrl_reg_4_value(cs, spi)?.hr()
+                == enabled_enum::OnOff::Enabled;
+
+        let mode = match (low_power_set, high_resolution_output_set) {
+            (true, false) => mode::Mode::LowPower,
+            (false, false) => mode::Mode::Normal,
+            (false, true) => mode::Mode::HighResolution,
+            _ => panic!("impossible mode"),
+        };
+        Ok(mode)
+    }
+
+    fn get_accel_raw<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<I16x3, Error<CsE, SpiE>>
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        let x_lo = self.read_single_byte_from_spi(
+            cs,
+            spi,
+            RegisterAddresses::OutXL as u8,
+        )?;
+        let x_hi = self.read_single_byte_from_spi(
+            cs,
+            spi,
+            RegisterAddresses::OutXH as u8,
+        )?;
+        let y_lo = self.read_single_byte_from_spi(
+            cs,
+            spi,
+            RegisterAddresses::OutYL as u8,
+        )?;
+        let y_hi = self.read_single_byte_from_spi(
+            cs,
+            spi,
+            RegisterAddresses::OutYH as u8,
+        )?;
+        let z_lo = self.read_single_byte_from_spi(
+            cs,
+            spi,
+            RegisterAddresses::OutZL as u8,
+        )?;
+        let z_hi = self.read_single_byte_from_spi(
+            cs,
+            spi,
+            RegisterAddresses::OutZH as u8,
+        )?;
+
+        let x = i16::from_le_bytes([x_lo, x_hi]);
+        let y = i16::from_le_bytes([y_lo, y_hi]);
+        let z = i16::from_le_bytes([z_lo, z_hi]);
+
+        Ok(I16x3 { x, y, z })
     }
 }
 

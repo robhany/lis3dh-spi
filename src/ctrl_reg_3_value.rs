@@ -1,15 +1,4 @@
-#[repr(u8)]
-#[derive(Copy, Clone, Debug, PartialEq)]
-enum Interrupt {
-    Disabled,
-    Enabled,
-}
-
-impl Default for Interrupt {
-    fn default() -> Self {
-        Interrupt::Disabled
-    }
-}
+use crate::enabled_enum::OnOff;
 
 const OVERRUN_BIT_OFFSET: u8 = 1;
 const WTM_BIT_OFFSET: u8 = 2;
@@ -20,13 +9,13 @@ const IA_1_BIT_OFFSET: u8 = 6;
 const CLICK_BIT_OFFSET: u8 = 7;
 #[derive(Default)]
 pub struct CtrlReg3Value {
-    interrupt_1_click: Interrupt,
-    interrupt_1_ia1: Interrupt,
-    interrupt_1_ia2: Interrupt,
-    interrupt_1_zyx_da: Interrupt,
-    interrupt_1_321_da: Interrupt,
-    interrupt_1_fifo_watermark: Interrupt,
-    interrupt_1_fifo_overrun: Interrupt,
+    interrupt_1_click: OnOff,
+    interrupt_1_ia1: OnOff,
+    interrupt_1_ia2: OnOff,
+    interrupt_1_zyx_da: OnOff,
+    interrupt_1_321_da: OnOff,
+    interrupt_1_fifo_watermark: OnOff,
+    interrupt_1_fifo_overrun: OnOff,
 }
 
 impl CtrlReg3Value {
@@ -68,11 +57,11 @@ impl CtrlReg3Value {
             | (self.interrupt_1_fifo_overrun as u8) << OVERRUN_BIT_OFFSET
     }
 
-    fn get_interrupt_from_bit_value(value: u8) -> Interrupt {
+    fn get_interrupt_from_bit_value(value: u8) -> OnOff {
         if value & 1 == 1 {
-            Interrupt::Enabled
+            OnOff::Enabled
         } else {
-            Interrupt::Disabled
+            OnOff::Disabled
         }
     }
 }
@@ -84,28 +73,25 @@ mod tests {
     fn conversion_from_raw_value_works() {
         let raw_value = 0b1010_0101_u8;
         let ctrl_reg_3 = super::CtrlReg3Value::from_raw_value(raw_value);
-        assert_eq!(ctrl_reg_3.interrupt_1_click, super::Interrupt::Enabled);
-        assert_eq!(ctrl_reg_3.interrupt_1_ia1, super::Interrupt::Disabled);
-        assert_eq!(ctrl_reg_3.interrupt_1_ia2, super::Interrupt::Enabled);
-        assert_eq!(ctrl_reg_3.interrupt_1_zyx_da, super::Interrupt::Disabled);
-        assert_eq!(ctrl_reg_3.interrupt_1_321_da, super::Interrupt::Disabled);
+        assert_eq!(ctrl_reg_3.interrupt_1_click, super::OnOff::Enabled);
+        assert_eq!(ctrl_reg_3.interrupt_1_ia1, super::OnOff::Disabled);
+        assert_eq!(ctrl_reg_3.interrupt_1_ia2, super::OnOff::Enabled);
+        assert_eq!(ctrl_reg_3.interrupt_1_zyx_da, super::OnOff::Disabled);
+        assert_eq!(ctrl_reg_3.interrupt_1_321_da, super::OnOff::Disabled);
         assert_eq!(
             ctrl_reg_3.interrupt_1_fifo_watermark,
-            super::Interrupt::Enabled
+            super::OnOff::Enabled
         );
-        assert_eq!(
-            ctrl_reg_3.interrupt_1_fifo_overrun,
-            super::Interrupt::Disabled
-        );
+        assert_eq!(ctrl_reg_3.interrupt_1_fifo_overrun, super::OnOff::Disabled);
     }
 
     #[test]
     fn conversion_to_raw_value_works() {
         let mut ctrl_reg_3_value = super::CtrlReg3Value::default();
-        ctrl_reg_3_value.interrupt_1_ia1 = super::Interrupt::Enabled;
-        ctrl_reg_3_value.interrupt_1_ia2 = super::Interrupt::Enabled;
-        ctrl_reg_3_value.interrupt_1_zyx_da = super::Interrupt::Enabled;
-        ctrl_reg_3_value.interrupt_1_fifo_watermark = super::Interrupt::Enabled;
+        ctrl_reg_3_value.interrupt_1_ia1 = super::OnOff::Enabled;
+        ctrl_reg_3_value.interrupt_1_ia2 = super::OnOff::Enabled;
+        ctrl_reg_3_value.interrupt_1_zyx_da = super::OnOff::Enabled;
+        ctrl_reg_3_value.interrupt_1_fifo_watermark = super::OnOff::Enabled;
         assert_eq!(ctrl_reg_3_value.get_raw_value(), 0b0111_0100);
     }
 }

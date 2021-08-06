@@ -89,6 +89,22 @@ pub struct CtrlReg1Value {
 }
 
 impl CtrlReg1Value {
+    pub fn x_en(&self) -> XEn {
+        self.x_en
+    }
+    pub fn y_en(&self) -> YEn {
+        self.y_en
+    }
+    pub fn z_en(&self) -> ZEn {
+        self.z_en
+    }
+    pub fn l_p_en(&self) -> LPEn {
+        self.l_p_en
+    }
+    pub fn output_data_rate(&self) -> ODR {
+        self.output_data_rate
+    }
+
     pub(super) fn get_raw_value(&self) -> u8 {
         (self.output_data_rate as u8) << DATA_RATE_SELECTION_BIT_OFFSET
             | (self.l_p_en as u8) << L_P_EN_BIT_OFFSET
