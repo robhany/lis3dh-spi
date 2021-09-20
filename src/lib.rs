@@ -1,10 +1,10 @@
 #![no_std]
-mod ctrl_reg_0_value;
-mod ctrl_reg_1_value;
-mod ctrl_reg_2_value;
-mod ctrl_reg_3_value;
-mod ctrl_reg_4_value;
-mod enabled_enum;
+pub mod ctrl_reg_0_value;
+pub mod ctrl_reg_1_value;
+pub mod ctrl_reg_2_value;
+pub mod ctrl_reg_3_value;
+pub mod ctrl_reg_4_value;
+pub mod enabled_enum;
 mod mode;
 mod status_reg_aux_value;
 mod temp_cfg_reg_value;
@@ -22,13 +22,13 @@ use hal::{
     blocking::spi::{Transfer, Write},
     digital::v2::OutputPin,
 };
-use micromath::vector::{I32x3, I16x3};
+use micromath::vector::{I16x3, I32x3};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use status_reg_aux_value::StatusRegAuxValue;
 use temp_cfg_reg_value::TempCfgRegValue;
 
-const SPI_WRITE_BIT: u8 = 0x40;
+pub const SPI_READ_BIT: u8 = 0x80;
 
 #[derive(Debug)]
 pub enum Error<CsE, SpiE> {
@@ -38,7 +38,7 @@ pub enum Error<CsE, SpiE> {
 
 #[repr(u8)]
 #[derive(FromPrimitive, PartialOrd, PartialEq)]
-enum RegisterAddresses {
+pub enum RegisterAddresses {
     StatusRegAux = 0x07,
     OutAdc1L,
     OutAdc1H,
@@ -83,8 +83,7 @@ enum RegisterAddresses {
     ActivationDuration,
 }
 
-fn is_read_only(mut address: u8) -> bool {
-    address &= !SPI_WRITE_BIT;
+fn is_read_only(address: u8) -> bool {
     let register = RegisterAddresses::from_u8(address).unwrap();
     (RegisterAddresses::StatusRegAux..RegisterAddresses::WhoAmI)
         .contains(&register)
@@ -111,28 +110,15 @@ pub struct Lis3dh {
 }
 
 impl Lis3dh {
-    pub fn set_ctrl_reg0(&mut self, value: CtrlReg0Value) {
-        self.ctrl_reg0 = value;
+    pub fn set_output_data_rate(
+        &mut self,
+        output_data_rate: ctrl_reg_1_value::ODR,
+    ) {
+        self.ctrl_reg1.set_output_data_rate(output_data_rate);
     }
 
-    pub fn set_temp_cfg_reg(&mut self, value: TempCfgRegValue) {
-        self.temp_cfg_reg = value;
-    }
-
-    pub fn set_ctrl_reg1(&mut self, value: CtrlReg1Value) {
-        self.ctrl_reg1 = value;
-    }
-
-    pub fn set_ctrl_reg2(&mut self, value: CtrlReg2Value) {
-        self.ctrl_reg2 = value;
-    }
-
-    pub fn set_ctrl_reg3(&mut self, value: CtrlReg3Value) {
-        self.ctrl_reg3 = value;
-    }
-
-    pub fn set_ctrl_reg4(&mut self, value: CtrlReg4Value) {
-        self.ctrl_reg4 = value;
+    pub fn set_l_p_en(&mut self, l_p_en: ctrl_reg_1_value::LPEn) {
+        self.ctrl_reg1.set_l_p_en(l_p_en);
     }
 
     pub fn write_all_settings<CS, SPI, CsE, SpiE>(
@@ -147,16 +133,13 @@ impl Lis3dh {
         self.write_to_spi(
             cs,
             spi,
-            [
-                RegisterAddresses::CtrlReg0 as u8 | SPI_WRITE_BIT,
-                self.ctrl_reg0 as u8,
-            ],
+            [RegisterAddresses::CtrlReg0 as u8, self.ctrl_reg0 as u8],
         )?;
         self.write_to_spi(
             cs,
             spi,
             [
-                RegisterAddresses::TempCfgReg as u8 | SPI_WRITE_BIT,
+                RegisterAddresses::TempCfgReg as u8,
                 self.temp_cfg_reg.get_raw_value(),
             ],
         )?;
@@ -164,7 +147,7 @@ impl Lis3dh {
             cs,
             spi,
             [
-                RegisterAddresses::CtrlReg1 as u8 | SPI_WRITE_BIT,
+                RegisterAddresses::CtrlReg1 as u8,
                 self.ctrl_reg1.get_raw_value(),
             ],
         )?;
@@ -172,7 +155,7 @@ impl Lis3dh {
             cs,
             spi,
             [
-                RegisterAddresses::CtrlReg2 as u8 | SPI_WRITE_BIT,
+                RegisterAddresses::CtrlReg2 as u8,
                 self.ctrl_reg2.get_raw_value(),
             ],
         )?;
@@ -180,7 +163,7 @@ impl Lis3dh {
             cs,
             spi,
             [
-                RegisterAddresses::CtrlReg3 as u8 | SPI_WRITE_BIT,
+                RegisterAddresses::CtrlReg3 as u8,
                 self.ctrl_reg3.get_raw_value(),
             ],
         )?;
@@ -188,8 +171,16 @@ impl Lis3dh {
             cs,
             spi,
             [
-                RegisterAddresses::CtrlReg4 as u8 | SPI_WRITE_BIT,
+                RegisterAddresses::CtrlReg4 as u8,
                 self.ctrl_reg4.get_raw_value(),
+            ],
+        )?;
+        self.write_to_spi(
+            cs,
+            spi,
+            [
+                RegisterAddresses::TempCfgReg as u8,
+                self.temp_cfg_reg.get_raw_value(),
             ],
         )
     }
@@ -463,6 +454,19 @@ impl Lis3dh {
         Ok(((high_byte as u16) << 8) | low_byte as u16)
     }
 
+    pub fn get_register_raw_value<CS, SPI, CsE, SpiE>(
+        &mut self,
+        address: RegisterAddresses,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<u8, Error<CsE, SpiE>>
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        self.read_single_byte_from_spi(cs, spi, address as u8)
+    }
+
     pub fn get_who_am_i<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -485,7 +489,7 @@ impl Lis3dh {
         CS: OutputPin<Error = CsE>,
         SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
     {
-        let mut read_buffer = [address_to_read, 0xff];
+        let mut read_buffer = [address_to_read | SPI_READ_BIT, 0xff];
         cs.set_low().map_err(Error::ChipSelectError)?;
         spi.transfer(&mut read_buffer).map_err(Error::SpiError)?;
         cs.set_high().map_err(Error::ChipSelectError)?;
@@ -602,13 +606,4 @@ mod tests {
         ));
     }
 
-    #[test]
-    fn checking_if_a_register_is_read_only_works_with_set_write_bit() {
-        assert!(super::is_read_only(
-            super::RegisterAddresses::FifSrcReg as u8 | super::SPI_WRITE_BIT
-        ));
-        assert!(!super::is_read_only(
-            super::RegisterAddresses::CtrlReg1 as u8 | super::SPI_WRITE_BIT
-        ));
-    }
 }
