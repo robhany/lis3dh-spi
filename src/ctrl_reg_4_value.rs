@@ -82,22 +82,46 @@ pub struct CtrlReg4Value {
 }
 
 impl CtrlReg4Value {
-    pub fn sim(&self) -> SpiModeSelection {
+    pub(super) fn set_sim(&mut self, sim: SpiModeSelection) {
+        self.sim = sim;
+    }
+
+    pub(super) fn set_st(&mut self, st: SelfTest) {
+        self.st = st;
+    }
+
+    pub(super) fn set_hr(&mut self, hr: OnOff) {
+        self.hr = hr;
+    }
+
+    pub(super) fn set_fs(&mut self, fs: FullScaleSelection) {
+        self.fs = fs;
+    }
+
+    pub(super) fn set_ble(&mut self, ble: Endianness) {
+        self.ble = ble;
+    }
+
+    pub(super) fn set_bdu(&mut self, bdu: BlockDataUpdate) {
+        self.bdu = bdu;
+    }
+
+    pub(super) fn sim(&self) -> SpiModeSelection {
         self.sim
     }
-    pub fn st(&self) -> SelfTest {
+    pub(super) fn st(&self) -> SelfTest {
         self.st
     }
-    pub fn hr(&self) -> OnOff {
+    pub(super) fn hr(&self) -> OnOff {
         self.hr
     }
-    pub fn fs(&self) -> FullScaleSelection {
+    pub(super) fn fs(&self) -> FullScaleSelection {
         self.fs
     }
-    pub fn ble(&self) -> Endianness {
+    pub(super) fn ble(&self) -> Endianness {
         self.ble
     }
-    pub fn bdu(&self) -> BlockDataUpdate {
+    pub(super) fn bdu(&self) -> BlockDataUpdate {
         self.bdu
     }
 
