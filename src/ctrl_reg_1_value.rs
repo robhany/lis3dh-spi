@@ -89,6 +89,16 @@ pub struct CtrlReg1Value {
 }
 
 impl CtrlReg1Value {
+    pub(super) fn set_output_data_rate(&mut self, output_data_rate: ODR) {
+        self.output_data_rate = output_data_rate;
+    }
+
+    pub(super) fn set_l_p_en(&mut self, l_p_en: LPEn) {
+        self.l_p_en = l_p_en;
+    }
+}
+
+impl CtrlReg1Value {
     pub fn x_en(&self) -> XEn {
         self.x_en
     }
