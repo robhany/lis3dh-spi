@@ -375,7 +375,7 @@ impl Lis3dh {
         )
     }
 
-    pub fn get_angle_and_offset<CS, SPI, CsE, SpiE>(
+    pub fn get_angle_and_gravity_offset<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
         spi: &mut SPI,

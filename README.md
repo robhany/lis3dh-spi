@@ -19,14 +19,20 @@ Add this to your Cargo.toml:
 
 ```toml
 [dependencies]
-lis3dh-spi = "0.1.0"
+lis3dh-spi = "0.0.2"
 ```
 
 And this to your main.rs
 
 ```rust
-//SPI
-   #TODO add example
+
+let mut accelerometer = lis3dh_spi::Lis3dh::default();
+
+accelerometer.set_l_p_en(LPEn::HighResolutionNormalMode);
+accelerometer.set_output_data_rate(ODR::Hz400);
+accelerometer.write_all_settings(&mut chip_select_pin, &mut spi_bus).ok();
+let angle_and_gravity_offset = accelerometer.get_angle_and_gravity_offset(&mut chip_select_pin, &mut spi_bus).ok();
+
 ```
 
 <!-- Badges -->
