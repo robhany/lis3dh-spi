@@ -30,6 +30,23 @@ use temp_cfg_reg_value::TempCfgRegValue;
 
 pub const SPI_READ_BIT: u8 = 0x80;
 
+pub struct AngleAnd1GOffset {
+    angle: u16,
+    offset: u16,
+}
+
+impl AngleAnd1GOffset {
+    pub fn new(angle: u16, offset: u16) -> Self {
+        AngleAnd1GOffset { angle, offset }
+    }
+    pub fn angle(&self) -> u16 {
+        self.angle
+    }
+    pub fn offset(&self) -> u16 {
+        self.offset
+    }
+}
+
 #[derive(Debug)]
 pub enum Error<CsE, SpiE> {
     ChipSelectError(CsE),
@@ -358,6 +375,31 @@ impl Lis3dh {
         )
     }
 
+    pub fn get_angle_and_offset<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<AngleAnd1GOffset, Error<CsE, SpiE>>
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        let accel_values = self.get_accel_norm(cs, spi)?;
+        let acceleration_absolute = micromath::F32Ext::sqrt(
+            accel_values.x.pow(2) as f32
+                + accel_values.y.pow(2) as f32
+                + accel_values.z.pow(2) as f32,
+        );
+
+        let angle_to_z = micromath::F32Ext::acos(
+            accel_values.z as f32 / (1_f32 + acceleration_absolute),
+        )
+        .to_degrees();
+        let offset = micromath::F32Ext::abs(1000_f32 - acceleration_absolute);
+
+        Ok(AngleAnd1GOffset::new(angle_to_z as u16, offset as u16))
+    }
+
     pub fn get_accel_norm<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -605,5 +647,4 @@ mod tests {
             super::RegisterAddresses::CtrlReg1 as u8
         ));
     }
-
 }
