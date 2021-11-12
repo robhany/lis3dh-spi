@@ -71,7 +71,7 @@ impl Default for BlockDataUpdate {
     }
 }
 
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct CtrlReg4Value {
     sim: SpiModeSelection,
     st: SelfTest,

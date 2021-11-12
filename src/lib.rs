@@ -116,7 +116,7 @@ fn check_if_bit_is_set(value: u8, bit_position: u8) -> bool {
     ((value >> bit_position) & 0b1).eq(&0b1)
 }
 
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct Lis3dh {
     ctrl_reg0: CtrlReg0Value,
     temp_cfg_reg: TempCfgRegValue,

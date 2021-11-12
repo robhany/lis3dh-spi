@@ -7,7 +7,8 @@ const ZYX_DA_BIT_OFFSET: u8 = 4;
 const IA_2_BIT_OFFSET: u8 = 5;
 const IA_1_BIT_OFFSET: u8 = 6;
 const CLICK_BIT_OFFSET: u8 = 7;
-#[derive(Default)]
+
+#[derive(Clone, Copy, Default)]
 pub struct CtrlReg3Value {
     interrupt_1_click: OnOff,
     interrupt_1_ia1: OnOff,

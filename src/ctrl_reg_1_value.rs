@@ -79,7 +79,7 @@ impl Default for ODR {
     }
 }
 
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct CtrlReg1Value {
     x_en: XEn,
     y_en: YEn,

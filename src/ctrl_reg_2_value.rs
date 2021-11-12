@@ -68,7 +68,7 @@ impl Default for HighPassFilter {
     }
 }
 
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct CtrlReg2Value {
     hp_ia1: HighPassFilter,
     hp_ia2: HighPassFilter,
