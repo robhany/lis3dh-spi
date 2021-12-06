@@ -30,6 +30,7 @@ use temp_cfg_reg_value::TempCfgRegValue;
 
 pub const SPI_READ_BIT: u8 = 0x80;
 
+#[derive(Copy, Clone)]
 pub struct AngleAnd1GOffset {
     angle: u16,
     offset: u16,
