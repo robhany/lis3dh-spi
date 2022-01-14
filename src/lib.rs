@@ -203,6 +203,23 @@ impl Lis3dh {
         )
     }
 
+    pub fn check_if_settings_are_written_correctly<CS, SPI, Cse, SpiE> (
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<bool, Error<CsE, SpiE>> where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        Ok(self.ctrl_reg0 == self.get_ctrl_reg_0_value(cs, spi)? &&
+            self.ctrl_reg1 == self.get_ctrl_reg_1_value(cs, spi)? &&
+            self.ctrl_reg2 == self.get_ctrl_reg_2_value(cs, spi)? &&
+            self.ctrl_reg3 == self.get_ctrl_reg_3_value(cs, spi)? &&
+            self.ctrl_reg4 == self.get_ctrl_reg_4_value(cs, spi)? &&
+            self.temp_cfg_reg == self.get_temp_cfg_reg(cs, spi)?
+        )
+    }
+
     pub fn get_ctrl_reg_4_value<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
