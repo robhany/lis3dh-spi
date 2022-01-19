@@ -1,5 +1,5 @@
 #[repr(u8)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum CtrlReg0Value {
     PullUpConnectedSdoSa0Pin,
     PullUpDisconnectedSdoSa0Pin = 16,
