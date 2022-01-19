@@ -128,6 +128,25 @@ pub struct Lis3dh {
 }
 
 impl Lis3dh {
+    fn ctrl_reg0_setting(&self) -> CtrlReg0Value {
+        self.ctrl_reg0
+    }
+    fn temp_cfg_reg_setting(&self) -> TempCfgRegValue {
+        self.temp_cfg_reg
+    }
+    fn ctrl_reg1_setting(&self) -> CtrlReg1Value {
+        self.ctrl_reg1
+    }
+    fn ctrl_reg2_setting(&self) -> CtrlReg2Value {
+        self.ctrl_reg2
+    }
+    fn ctrl_reg3_setting(&self) -> CtrlReg3Value {
+        self.ctrl_reg3
+    }
+    fn ctrl_reg4_setting(&self) -> CtrlReg4Value {
+        self.ctrl_reg4
+    }
+
     pub fn set_output_data_rate(
         &mut self,
         output_data_rate: ctrl_reg_1_value::ODR,
@@ -152,14 +171,6 @@ impl Lis3dh {
             cs,
             spi,
             [RegisterAddresses::CtrlReg0 as u8, self.ctrl_reg0 as u8],
-        )?;
-        self.write_to_spi(
-            cs,
-            spi,
-            [
-                RegisterAddresses::TempCfgReg as u8,
-                self.temp_cfg_reg.get_raw_value(),
-            ],
         )?;
         self.write_to_spi(
             cs,
@@ -203,21 +214,33 @@ impl Lis3dh {
         )
     }
 
-    pub fn check_if_settings_are_written_correctly<CS, SPI, Cse, SpiE> (
+    pub fn check_if_settings_are_written_correctly<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
         spi: &mut SPI,
-    ) -> Result<bool, Error<CsE, SpiE>> where
+    ) -> Result<bool, Error<CsE, SpiE>>
+    where
         CS: OutputPin<Error = CsE>,
         SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
     {
-        Ok(self.ctrl_reg0 == self.get_ctrl_reg_0_value(cs, spi)? &&
-            self.ctrl_reg1 == self.get_ctrl_reg_1_value(cs, spi)? &&
-            self.ctrl_reg2 == self.get_ctrl_reg_2_value(cs, spi)? &&
-            self.ctrl_reg3 == self.get_ctrl_reg_3_value(cs, spi)? &&
-            self.ctrl_reg4 == self.get_ctrl_reg_4_value(cs, spi)? &&
-            self.temp_cfg_reg == self.get_temp_cfg_reg(cs, spi)?
-        )
+        Ok(self
+            .ctrl_reg0_setting()
+            .eq(&self.get_ctrl_reg_0_value(cs, spi)?)
+            && self
+                .ctrl_reg1_setting()
+                .eq(&self.get_ctrl_reg_1_value(cs, spi)?)
+            && self
+                .ctrl_reg2_setting()
+                .eq(&self.get_ctrl_reg_2_value(cs, spi)?)
+            && self
+                .ctrl_reg3_setting()
+                .eq(&self.get_ctrl_reg_3_value(cs, spi)?)
+            && self
+                .ctrl_reg4_setting()
+                .eq(&self.get_ctrl_reg_4_value(cs, spi)?)
+            && self
+                .temp_cfg_reg_setting()
+                .eq(&self.get_temp_cfg_reg(cs, spi)?))
     }
 
     pub fn get_ctrl_reg_4_value<CS, SPI, CsE, SpiE>(

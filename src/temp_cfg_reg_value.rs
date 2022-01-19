@@ -4,7 +4,7 @@ const TEMP_EN_BIT_OFFSET: u8 = 6;
 
 const ADC_EN_BIT_OFFSET: u8 = 7;
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, PartialEq)]
 pub struct TempCfgRegValue {
     temp: OnOff,
     adc: OnOff,
