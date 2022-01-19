@@ -13,13 +13,14 @@ https://www.st.com/resource/en/datasheet/lis3dh.pdf
 
 
 ## About this driver
-#TODO add Description
+This driver is not consuming the SPI bus the communication is running on.
+Bus has to be passed as mutable reference when interacting with the LIS3DH.  
 ## Usage
 Add this to your Cargo.toml:
 
 ```toml
 [dependencies]
-lis3dh-spi = "0.0.2"
+lis3dh-spi = "0.0.3"
 ```
 
 And this to your main.rs
