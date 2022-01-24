@@ -1,6 +1,6 @@
 [package]
 name = "lis3dh-spi"
-version = "0.0.3 "
+version = "0.0.4 "
 authors = ["Robert Hanyecz <rh@wertschuetz.de>"]
 categories = ["embedded", "no-std"]
 description = "no_std driver for the ultra-low-power high-performance 3-axis \"nano\" accelerometer LIS3DH using SPI"
