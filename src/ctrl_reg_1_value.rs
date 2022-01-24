@@ -47,13 +47,13 @@ const L_P_EN_BIT_OFFSET: u8 = 3;
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum LPEn {
-    LowPowerEnabled,
     HighResolutionNormalMode,
+    LowPowerEnabled,
 }
 
 impl Default for LPEn {
     fn default() -> Self {
-        LPEn::LowPowerEnabled
+        LPEn::HighResolutionNormalMode
     }
 }
 
