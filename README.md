@@ -36,6 +36,16 @@ let angle_and_gravity_offset = accelerometer.get_angle_and_gravity_offset(&mut c
 
 ```
 
+## License
+
+Licensed under either of
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or
+  http://www.apache.org/licenses/LICENSE-2.0)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+
+at your option.
+
 <!-- Badges -->
 [crates-io]: https://crates.io/crates/lis3dh-spi
 [crates-io-badge]: https://img.shields.io/crates/v/lis3dh-spi.svg?maxAge=3600
