@@ -20,7 +20,7 @@ Add this to your Cargo.toml:
 
 ```toml
 [dependencies]
-lis3dh-spi = "0.0.3"
+lis3dh-spi = "0.0.5"
 ```
 
 And this to your main.rs
