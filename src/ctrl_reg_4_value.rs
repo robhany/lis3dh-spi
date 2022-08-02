@@ -3,7 +3,7 @@ use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
 #[repr(u8)]
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum SpiModeSelection {
     FourWireInterface,
     ThreeWireInterface,
@@ -16,7 +16,7 @@ impl Default for SpiModeSelection {
 
 const SELF_TEST_BIT_OFFSET: u8 = 1;
 #[repr(u8)]
-#[derive(Copy, Clone, Debug, FromPrimitive, PartialEq)]
+#[derive(Copy, Clone, Debug, FromPrimitive, PartialEq, Eq)]
 pub enum SelfTest {
     NormalMode,
     SelfTest0,
@@ -32,7 +32,7 @@ const HIGH_RESOLUTION_OUTPUT_MODE_BIT_OFFSET: u8 = 3;
 
 const FULL_SCALE_SELECTION_OUTPUT_MODE_BIT_OFFSET: u8 = 4;
 #[repr(u8)]
-#[derive(Copy, Clone, Debug, FromPrimitive, PartialEq)]
+#[derive(Copy, Clone, Debug, FromPrimitive, PartialEq, Eq)]
 pub enum FullScaleSelection {
     Gravity2G,
     Gravity4G,
@@ -47,7 +47,7 @@ impl Default for FullScaleSelection {
 
 const BLE_SETTING_BIT_OFFSET: u8 = 6;
 #[repr(u8)]
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Endianness {
     LSBLowerAddress,
     MSBLowerAddress,
@@ -60,7 +60,7 @@ impl Default for Endianness {
 
 const BDU_SETTING_BIT_OFFSET: u8 = 7;
 #[repr(u8)]
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum BlockDataUpdate {
     ContinuousUpdate,
     NotUpdated,
@@ -71,7 +71,7 @@ impl Default for BlockDataUpdate {
     }
 }
 
-#[derive(Clone, Copy, Default, PartialEq)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub struct CtrlReg4Value {
     sim: SpiModeSelection,
     st: SelfTest,
@@ -82,49 +82,42 @@ pub struct CtrlReg4Value {
 }
 
 impl CtrlReg4Value {
-    pub(super) fn set_sim(&mut self, sim: SpiModeSelection) {
+    pub fn set_sim(&mut self, sim: SpiModeSelection) {
         self.sim = sim;
     }
-
-    pub(super) fn set_st(&mut self, st: SelfTest) {
+    pub fn set_st(&mut self, st: SelfTest) {
         self.st = st;
     }
-
-    pub(super) fn set_hr(&mut self, hr: OnOff) {
+    pub fn set_hr(&mut self, hr: OnOff) {
         self.hr = hr;
     }
-
-    pub(super) fn set_fs(&mut self, fs: FullScaleSelection) {
+    pub fn set_fs(&mut self, fs: FullScaleSelection) {
         self.fs = fs;
     }
-
-    pub(super) fn set_ble(&mut self, ble: Endianness) {
+    pub fn set_ble(&mut self, ble: Endianness) {
         self.ble = ble;
     }
-
-    pub(super) fn set_bdu(&mut self, bdu: BlockDataUpdate) {
+    pub fn set_bdu(&mut self, bdu: BlockDataUpdate) {
         self.bdu = bdu;
     }
-
-    pub(super) fn sim(&self) -> SpiModeSelection {
+    pub fn sim(&self) -> SpiModeSelection {
         self.sim
     }
-    pub(super) fn st(&self) -> SelfTest {
+    pub fn st(&self) -> SelfTest {
         self.st
     }
-    pub(super) fn hr(&self) -> OnOff {
+    pub fn hr(&self) -> OnOff {
         self.hr
     }
-    pub(super) fn fs(&self) -> FullScaleSelection {
+    pub fn fs(&self) -> FullScaleSelection {
         self.fs
     }
-    pub(super) fn ble(&self) -> Endianness {
+    pub fn ble(&self) -> Endianness {
         self.ble
     }
-    pub(super) fn bdu(&self) -> BlockDataUpdate {
+    pub fn bdu(&self) -> BlockDataUpdate {
         self.bdu
     }
-
     pub(super) fn get_raw_value(&self) -> u8 {
         (self.bdu as u8) << BDU_SETTING_BIT_OFFSET
             | (self.ble as u8) << BLE_SETTING_BIT_OFFSET
@@ -184,7 +177,6 @@ mod test {
     #[test]
     fn conversion_to_raw_value_works() {
         let mut ctrl_reg_value = super::CtrlReg4Value::default();
-
         ctrl_reg_value.sim = super::SpiModeSelection::ThreeWireInterface;
         ctrl_reg_value.st = super::SelfTest::SelfTest1;
         ctrl_reg_value.hr = super::OnOff::Enabled;

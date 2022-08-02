@@ -2,8 +2,8 @@ use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 const HPM_BIT_OFFSET: u8 = 6;
 #[repr(u8)]
-#[derive(Copy, Clone, FromPrimitive, Debug, PartialEq)]
-enum HighPassFilterModeSelection {
+#[derive(Copy, Clone, FromPrimitive, Debug, PartialEq, Eq)]
+pub enum HighPassFilterModeSelection {
     NormalResetByReadingReference,
     ReferenceSignalForFiltering,
     Normal,
@@ -28,8 +28,8 @@ impl Default for HighPassFilterModeSelection {
 /// |:--------|:----- |:-----|:-----|:------|:-------|:-------|:-------|:------- |:------|
 const HPCF_BIT_OFFSET: u8 = 4;
 #[repr(u8)]
-#[derive(Copy, Clone, FromPrimitive, Debug, PartialEq)]
-enum HighPassFilterCutOffFrequencySelection {
+#[derive(Copy, Clone, FromPrimitive, Debug, PartialEq, Eq)]
+pub enum HighPassFilterCutOffFrequencySelection {
     OneFiftieth,
     AHundredthOrOneHundredAndTwentyFifth,
     ATwHundredthOrOneTwoHundredAndFiftieth,
@@ -43,8 +43,8 @@ impl Default for HighPassFilterCutOffFrequencySelection {
 
 const FDS_BIT_OFFSET: u8 = 3;
 #[repr(u8)]
-#[derive(Copy, Clone, Debug, PartialEq)]
-enum FilteredDataSelection {
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum FilteredDataSelection {
     InternalFilterBypassed,
     InternalFilterSentToFifo,
 }
@@ -57,8 +57,8 @@ impl Default for FilteredDataSelection {
 const HP_CLICK_BIT_OFFSET: u8 = 2;
 const HP_IA2_BIT_OFFSET: u8 = 1;
 #[repr(u8)]
-#[derive(Copy, Clone, Debug, PartialEq)]
-enum HighPassFilter {
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum HighPassFilter {
     FilterBypassed,
     FilterEnabled,
 }
@@ -68,7 +68,7 @@ impl Default for HighPassFilter {
     }
 }
 
-#[derive(Clone, Copy, Default, PartialEq)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub struct CtrlReg2Value {
     hp_ia1: HighPassFilter,
     hp_ia2: HighPassFilter,
@@ -79,6 +79,42 @@ pub struct CtrlReg2Value {
 }
 
 impl CtrlReg2Value {
+    pub fn set_hp_ia1(&mut self, hp_ia1: HighPassFilter) {
+        self.hp_ia1 = hp_ia1;
+    }
+    pub fn set_hp_ia2(&mut self, hp_ia2: HighPassFilter) {
+        self.hp_ia2 = hp_ia2;
+    }
+    pub fn set_hp_click(&mut self, hp_click: HighPassFilter) {
+        self.hp_click = hp_click;
+    }
+    pub fn set_fds(&mut self, fds: FilteredDataSelection) {
+        self.fds = fds;
+    }
+    pub fn set_hpcf(&mut self, hpcf: HighPassFilterCutOffFrequencySelection) {
+        self.hpcf = hpcf;
+    }
+    pub fn set_hpm(&mut self, hpm: HighPassFilterModeSelection) {
+        self.hpm = hpm;
+    }
+    pub fn hp_ia1(&self) -> HighPassFilter {
+        self.hp_ia1
+    }
+    pub fn hp_ia2(&self) -> HighPassFilter {
+        self.hp_ia2
+    }
+    pub fn hp_click(&self) -> HighPassFilter {
+        self.hp_click
+    }
+    pub fn fds(&self) -> FilteredDataSelection {
+        self.fds
+    }
+    pub fn hpcf(&self) -> HighPassFilterCutOffFrequencySelection {
+        self.hpcf
+    }
+    pub fn hpm(&self) -> HighPassFilterModeSelection {
+        self.hpm
+    }
     pub(super) fn get_raw_value(&self) -> u8 {
         (self.hpm as u8) << HPM_BIT_OFFSET
             | (self.hpcf as u8) << HPCF_BIT_OFFSET
@@ -87,7 +123,6 @@ impl CtrlReg2Value {
             | (self.hp_ia2 as u8) << HP_IA2_BIT_OFFSET
             | self.hp_ia1 as u8
     }
-
     pub(super) fn from_raw_value(value: u8) -> Self {
         let hp_ia1 = if value & 1 == 1 {
             HighPassFilter::FilterEnabled

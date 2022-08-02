@@ -1,3 +1,4 @@
+use crate::enabled_enum;
 use crate::enabled_enum::OnOff;
 
 const OVERRUN_BIT_OFFSET: u8 = 1;
@@ -8,7 +9,7 @@ const IA_2_BIT_OFFSET: u8 = 5;
 const IA_1_BIT_OFFSET: u8 = 6;
 const CLICK_BIT_OFFSET: u8 = 7;
 
-#[derive(Clone, Copy, Default, PartialEq)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub struct CtrlReg3Value {
     interrupt_1_click: OnOff,
     interrupt_1_ia1: OnOff,
@@ -20,34 +21,79 @@ pub struct CtrlReg3Value {
 }
 
 impl CtrlReg3Value {
+    pub fn set_interrupt_1_click(&mut self, interrupt_1_click: OnOff) {
+        self.interrupt_1_click = interrupt_1_click;
+    }
+    pub fn set_interrupt_1_ia1(&mut self, interrupt_1_ia1: OnOff) {
+        self.interrupt_1_ia1 = interrupt_1_ia1;
+    }
+    pub fn set_interrupt_1_ia2(&mut self, interrupt_1_ia2: OnOff) {
+        self.interrupt_1_ia2 = interrupt_1_ia2;
+    }
+    pub fn set_interrupt_1_zyx_da(&mut self, interrupt_1_zyx_da: OnOff) {
+        self.interrupt_1_zyx_da = interrupt_1_zyx_da;
+    }
+    pub fn set_interrupt_1_321_da(&mut self, interrupt_1_321_da: OnOff) {
+        self.interrupt_1_321_da = interrupt_1_321_da;
+    }
+    pub fn set_interrupt_1_fifo_watermark(
+        &mut self,
+        interrupt_1_fifo_watermark: OnOff,
+    ) {
+        self.interrupt_1_fifo_watermark = interrupt_1_fifo_watermark;
+    }
+    pub fn set_interrupt_1_fifo_overrun(
+        &mut self,
+        interrupt_1_fifo_overrun: OnOff,
+    ) {
+        self.interrupt_1_fifo_overrun = interrupt_1_fifo_overrun;
+    }
+    pub fn interrupt_1_click(&self) -> OnOff {
+        self.interrupt_1_click
+    }
+    pub fn interrupt_1_ia1(&self) -> OnOff {
+        self.interrupt_1_ia1
+    }
+    pub fn interrupt_1_ia2(&self) -> OnOff {
+        self.interrupt_1_ia2
+    }
+    pub fn interrupt_1_zyx_da(&self) -> OnOff {
+        self.interrupt_1_zyx_da
+    }
+    pub fn interrupt_1_321_da(&self) -> OnOff {
+        self.interrupt_1_321_da
+    }
+    pub fn interrupt_1_fifo_watermark(&self) -> OnOff {
+        self.interrupt_1_fifo_watermark
+    }
+    pub fn interrupt_1_fifo_overrun(&self) -> OnOff {
+        self.interrupt_1_fifo_overrun
+    }
     pub(super) fn from_raw_value(value: u8) -> Self {
         CtrlReg3Value {
-            interrupt_1_click: CtrlReg3Value::get_interrupt_from_bit_value(
+            interrupt_1_click: enabled_enum::get_state_from_bit_value(
                 value >> CLICK_BIT_OFFSET,
             ),
-            interrupt_1_ia1: CtrlReg3Value::get_interrupt_from_bit_value(
+            interrupt_1_ia1: enabled_enum::get_state_from_bit_value(
                 value >> IA_1_BIT_OFFSET,
             ),
-            interrupt_1_ia2: CtrlReg3Value::get_interrupt_from_bit_value(
+            interrupt_1_ia2: enabled_enum::get_state_from_bit_value(
                 value >> IA_2_BIT_OFFSET,
             ),
-            interrupt_1_zyx_da: CtrlReg3Value::get_interrupt_from_bit_value(
+            interrupt_1_zyx_da: enabled_enum::get_state_from_bit_value(
                 value >> ZYX_DA_BIT_OFFSET,
             ),
-            interrupt_1_321_da: CtrlReg3Value::get_interrupt_from_bit_value(
+            interrupt_1_321_da: enabled_enum::get_state_from_bit_value(
                 value >> DA_321_BIT_OFFSET,
             ),
-            interrupt_1_fifo_watermark:
-                CtrlReg3Value::get_interrupt_from_bit_value(
-                    value >> WTM_BIT_OFFSET,
-                ),
-            interrupt_1_fifo_overrun:
-                CtrlReg3Value::get_interrupt_from_bit_value(
-                    value >> OVERRUN_BIT_OFFSET,
-                ),
+            interrupt_1_fifo_watermark: enabled_enum::get_state_from_bit_value(
+                value >> WTM_BIT_OFFSET,
+            ),
+            interrupt_1_fifo_overrun: enabled_enum::get_state_from_bit_value(
+                value >> OVERRUN_BIT_OFFSET,
+            ),
         }
     }
-
     pub(super) fn get_raw_value(&self) -> u8 {
         (self.interrupt_1_click as u8) << CLICK_BIT_OFFSET
             | (self.interrupt_1_ia1 as u8) << IA_1_BIT_OFFSET
@@ -57,19 +103,10 @@ impl CtrlReg3Value {
             | (self.interrupt_1_fifo_watermark as u8) << WTM_BIT_OFFSET
             | (self.interrupt_1_fifo_overrun as u8) << OVERRUN_BIT_OFFSET
     }
-
-    fn get_interrupt_from_bit_value(value: u8) -> OnOff {
-        if value & 1 == 1 {
-            OnOff::Enabled
-        } else {
-            OnOff::Disabled
-        }
-    }
 }
 
 #[cfg(test)]
 mod tests {
-
     #[test]
     fn conversion_from_raw_value_works() {
         let raw_value = 0b1010_0101_u8;

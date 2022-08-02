@@ -1,14 +1,11 @@
-#[repr(u8)]
-enum StatusRegAuxDataBitOffset {
-    NewDataOn1Axis,
-    NewDataOn2Axis,
-    NewDataOn3Axis,
-    NewDataOn3_2_1Axis,
-    OverrunOn1Axis,
-    OverrunOn2Axis,
-    OverrunOn3Axis,
-    OverrunOn3_2_1Axis,
-}
+const NEW_DATA_ON_1_AXIS_BIT_OFFSET: u8 = 0;
+const NEW_DATA_ON_2_AXIS_BIT_OFFSET: u8 = 1;
+const NEW_DATA_ON_3_AXIS_BIT_OFFSET: u8 = 2;
+const NEW_DATA_ON_3_2_1_AXIS_BIT_OFFSET: u8 = 3;
+const OVERRUN_ON_1_AXIS_BIT_OFFSET: u8 = 4;
+const OVERRUN_ON_2_AXIS_BIT_OFFSET: u8 = 5;
+const OVERRUN_ON_3_AXIS_BIT_OFFSET: u8 = 6;
+const OVERRUN_ON_3_2_1_AXIS_BIT_OFFSET: u8 = 7;
 
 #[derive(Default)]
 pub struct StatusRegAuxValue {
@@ -55,35 +52,35 @@ impl StatusRegAuxValue {
         StatusRegAuxValue {
             new_data_on1axis: super::check_if_bit_is_set(
                 value,
-                StatusRegAuxDataBitOffset::NewDataOn1Axis as u8,
+                NEW_DATA_ON_1_AXIS_BIT_OFFSET,
             ),
             new_data_on2axis: super::check_if_bit_is_set(
                 value,
-                StatusRegAuxDataBitOffset::NewDataOn2Axis as u8,
+                NEW_DATA_ON_2_AXIS_BIT_OFFSET,
             ),
             new_data_on3axis: super::check_if_bit_is_set(
                 value,
-                StatusRegAuxDataBitOffset::NewDataOn3Axis as u8,
+                NEW_DATA_ON_3_AXIS_BIT_OFFSET,
             ),
             new_data_on3_2_1axis: super::check_if_bit_is_set(
                 value,
-                StatusRegAuxDataBitOffset::NewDataOn3_2_1Axis as u8,
+                NEW_DATA_ON_3_2_1_AXIS_BIT_OFFSET,
             ),
             overrun_on1axis: super::check_if_bit_is_set(
                 value,
-                StatusRegAuxDataBitOffset::OverrunOn1Axis as u8,
+                OVERRUN_ON_1_AXIS_BIT_OFFSET,
             ),
             overrun_on2axis: super::check_if_bit_is_set(
                 value,
-                StatusRegAuxDataBitOffset::OverrunOn2Axis as u8,
+                OVERRUN_ON_2_AXIS_BIT_OFFSET,
             ),
             overrun_on3axis: super::check_if_bit_is_set(
                 value,
-                StatusRegAuxDataBitOffset::OverrunOn3Axis as u8,
+                OVERRUN_ON_3_AXIS_BIT_OFFSET,
             ),
             overrun_on3_2_1axis: super::check_if_bit_is_set(
                 value,
-                StatusRegAuxDataBitOffset::OverrunOn3_2_1Axis as u8,
+                OVERRUN_ON_3_2_1_AXIS_BIT_OFFSET,
             ),
             overrun_or_new_data: value > 0,
         }

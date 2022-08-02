@@ -7,7 +7,7 @@ description = "no_std driver for the ultra-low-power high-performance 3-axis \"n
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 documentation = "https://docs.rs/lis3dh-spi"
-edition = "2018"
+edition = "2021"
 repository = "https://github.com/robhany/lis3dh-spi"
 
 

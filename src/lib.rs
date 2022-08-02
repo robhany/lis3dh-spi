@@ -5,6 +5,10 @@ pub mod ctrl_reg_2_value;
 pub mod ctrl_reg_3_value;
 pub mod ctrl_reg_4_value;
 pub mod enabled_enum;
+pub mod int_cfg;
+pub mod int_duration_value;
+pub mod int_src;
+pub mod int_ths_value;
 mod mode;
 mod status_reg_aux_value;
 mod temp_cfg_reg_value;
@@ -12,6 +16,9 @@ mod temp_cfg_reg_value;
 #[macro_use]
 extern crate num_derive;
 extern crate embedded_hal as hal;
+use crate::int_cfg::IntCfg;
+use crate::int_duration_value::IntDuration;
+use crate::int_src::IntSrc;
 use core::fmt::Debug;
 use ctrl_reg_0_value::CtrlReg0Value;
 use ctrl_reg_1_value::CtrlReg1Value;
@@ -22,6 +29,7 @@ use hal::{
     blocking::spi::{Transfer, Write},
     digital::v2::OutputPin,
 };
+use int_ths_value::IntThs;
 use micromath::vector::{I16x3, I32x3};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
@@ -52,10 +60,11 @@ impl AngleAnd1GOffset {
 pub enum Error<CsE, SpiE> {
     ChipSelectError(CsE),
     SpiError(SpiE),
+    AttemptToWriteToReadOnlyRegister,
 }
 
 #[repr(u8)]
-#[derive(FromPrimitive, PartialOrd, PartialEq)]
+#[derive(FromPrimitive, PartialOrd, PartialEq, Eq)]
 pub enum RegisterAddresses {
     StatusRegAux = 0x07,
     OutAdc1L,
@@ -125,6 +134,9 @@ pub struct Lis3dh {
     ctrl_reg2: CtrlReg2Value,
     ctrl_reg3: CtrlReg3Value,
     ctrl_reg4: CtrlReg4Value,
+    int1_ths: IntThs,
+    int1_duration: IntDuration,
+    int1_cfg: IntCfg,
 }
 
 impl Lis3dh {
@@ -146,18 +158,24 @@ impl Lis3dh {
     fn ctrl_reg4_setting(&self) -> CtrlReg4Value {
         self.ctrl_reg4
     }
-
+    fn int_1_ths_setting(&self) -> IntThs {
+        self.int1_ths
+    }
+    fn int_1_duration_setting(&self) -> IntDuration {
+        self.int1_duration
+    }
+    fn int_1_cfg_setting(&self) -> IntCfg {
+        self.int1_cfg
+    }
     pub fn set_output_data_rate(
         &mut self,
         output_data_rate: ctrl_reg_1_value::ODR,
     ) {
         self.ctrl_reg1.set_output_data_rate(output_data_rate);
     }
-
     pub fn set_l_p_en(&mut self, l_p_en: ctrl_reg_1_value::LPEn) {
         self.ctrl_reg1.set_l_p_en(l_p_en);
     }
-
     pub fn write_all_settings<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -170,7 +188,10 @@ impl Lis3dh {
         self.write_to_spi(
             cs,
             spi,
-            [RegisterAddresses::CtrlReg0 as u8, self.ctrl_reg0 as u8],
+            [
+                RegisterAddresses::CtrlReg0 as u8,
+                self.ctrl_reg0.get_raw_value(),
+            ],
         )?;
         self.write_to_spi(
             cs,
@@ -211,9 +232,32 @@ impl Lis3dh {
                 RegisterAddresses::TempCfgReg as u8,
                 self.temp_cfg_reg.get_raw_value(),
             ],
+        )?;
+        self.write_to_spi(
+            cs,
+            spi,
+            [
+                RegisterAddresses::Int1Threshold as u8,
+                self.int1_ths.get_raw_value(),
+            ],
+        )?;
+        self.write_to_spi(
+            cs,
+            spi,
+            [
+                RegisterAddresses::Int1Duration as u8,
+                self.int1_duration.get_raw_value(),
+            ],
+        )?;
+        self.write_to_spi(
+            cs,
+            spi,
+            [
+                RegisterAddresses::Int1Cfg as u8,
+                self.int1_cfg.get_raw_value(),
+            ],
         )
     }
-
     pub fn check_if_settings_are_written_correctly<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -240,9 +284,17 @@ impl Lis3dh {
                 .eq(&self.get_ctrl_reg_4_value(cs, spi)?)
             && self
                 .temp_cfg_reg_setting()
-                .eq(&self.get_temp_cfg_reg(cs, spi)?))
+                .eq(&self.get_temp_cfg_reg(cs, spi)?)
+            && self
+                .int_1_ths_setting()
+                .eq(&self.get_int_1_ths_values(cs, spi)?)
+            && self
+                .int_1_duration_setting()
+                .eq(&self.get_int_1_duration_values(cs, spi)?)
+            && self
+                .int_1_cfg_setting()
+                .eq(&self.get_int_1_cfg_values(cs, spi)?))
     }
-
     pub fn get_ctrl_reg_4_value<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -259,7 +311,6 @@ impl Lis3dh {
         )?;
         Ok(CtrlReg4Value::from_raw_value(value))
     }
-
     pub fn get_ctrl_reg_3_value<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -276,7 +327,6 @@ impl Lis3dh {
         )?;
         Ok(CtrlReg3Value::from_raw_value(value))
     }
-
     pub fn get_ctrl_reg_2_value<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -293,7 +343,6 @@ impl Lis3dh {
         )?;
         Ok(CtrlReg2Value::from_raw_value(value))
     }
-
     pub fn get_temp_cfg_reg<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -310,7 +359,6 @@ impl Lis3dh {
         )?;
         Ok(TempCfgRegValue::from_raw_value(value))
     }
-
     pub fn get_ctrl_reg_0_value<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -325,12 +373,8 @@ impl Lis3dh {
             spi,
             RegisterAddresses::CtrlReg0 as u8,
         )?;
-        if value == CtrlReg0Value::PullUpDisconnectedSdoSa0Pin as u8 {
-            return Ok(CtrlReg0Value::PullUpDisconnectedSdoSa0Pin);
-        }
-        Ok(CtrlReg0Value::PullUpDisconnectedSdoSa0Pin)
+        Ok(CtrlReg0Value::from_raw_value(value))
     }
-
     pub fn get_ctrl_reg_1_value<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -347,7 +391,6 @@ impl Lis3dh {
         )?;
         Ok(CtrlReg1Value::from_raw_value(value))
     }
-
     pub fn get_status_reg_aux_values<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -364,7 +407,70 @@ impl Lis3dh {
         )?;
         Ok(StatusRegAuxValue::from_raw_value(value))
     }
-
+    pub fn get_int_1_ths_values<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<IntThs, Error<CsE, SpiE>>
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        let value = self.read_single_byte_from_spi(
+            cs,
+            spi,
+            RegisterAddresses::Int1Threshold as u8,
+        )?;
+        Ok(IntThs::from_raw_value(value))
+    }
+    pub fn get_int_1_duration_values<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<IntDuration, Error<CsE, SpiE>>
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        let value = self.read_single_byte_from_spi(
+            cs,
+            spi,
+            RegisterAddresses::Int1Duration as u8,
+        )?;
+        Ok(IntDuration::from_raw_value(value))
+    }
+    pub fn get_int_1_cfg_values<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<IntCfg, Error<CsE, SpiE>>
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        let value = self.read_single_byte_from_spi(
+            cs,
+            spi,
+            RegisterAddresses::Int1Cfg as u8,
+        )?;
+        Ok(IntCfg::from_raw_value(value))
+    }
+    pub fn get_int_1_src_values<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<IntSrc, Error<CsE, SpiE>>
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        let value = self.read_single_byte_from_spi(
+            cs,
+            spi,
+            RegisterAddresses::Int1Src as u8,
+        )?;
+        Ok(IntSrc::from_raw_value(value))
+    }
     pub fn get_adc1_value<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -381,7 +487,6 @@ impl Lis3dh {
             RegisterAddresses::OutAdc1H as u8,
         )
     }
-
     pub fn get_adc2_value<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -398,7 +503,6 @@ impl Lis3dh {
             RegisterAddresses::OutAdc2H as u8,
         )
     }
-
     pub fn get_adc3_value<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -415,7 +519,6 @@ impl Lis3dh {
             RegisterAddresses::OutAdc3H as u8,
         )
     }
-
     pub fn get_angle_and_gravity_offset<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -440,7 +543,6 @@ impl Lis3dh {
 
         Ok(AngleAnd1GOffset::new(angle_to_z as u16, offset as u16))
     }
-
     pub fn get_accel_norm<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -517,7 +619,6 @@ impl Lis3dh {
 
         Ok(I32x3 { x, y, z })
     }
-
     fn get_adc_value<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -536,7 +637,6 @@ impl Lis3dh {
 
         Ok(((high_byte as u16) << 8) | low_byte as u16)
     }
-
     pub fn get_register_raw_value<CS, SPI, CsE, SpiE>(
         &mut self,
         address: RegisterAddresses,
@@ -549,7 +649,6 @@ impl Lis3dh {
     {
         self.read_single_byte_from_spi(cs, spi, address as u8)
     }
-
     pub fn get_who_am_i<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -561,7 +660,6 @@ impl Lis3dh {
     {
         self.read_single_byte_from_spi(cs, spi, RegisterAddresses::WhoAmI as u8)
     }
-
     fn read_single_byte_from_spi<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -578,7 +676,6 @@ impl Lis3dh {
         cs.set_high().map_err(Error::ChipSelectError)?;
         Ok(read_buffer[1])
     }
-
     fn write_to_spi<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -590,14 +687,13 @@ impl Lis3dh {
         SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
     {
         if is_read_only(*data.first().unwrap()) {
-            panic!("Attempt to write to a read only register");
+            return Err(Error::AttemptToWriteToReadOnlyRegister);
         }
         cs.set_low().map_err(Error::ChipSelectError)?;
         spi.write(&data).map_err(Error::SpiError)?;
         cs.set_high().map_err(Error::ChipSelectError)?;
         Ok(())
     }
-
     fn get_mode<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
@@ -621,7 +717,6 @@ impl Lis3dh {
         };
         Ok(mode)
     }
-
     fn get_accel_raw<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
