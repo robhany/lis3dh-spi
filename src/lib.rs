@@ -799,6 +799,23 @@ impl Lis3dh {
         };
         Ok(mode)
     }
+
+    pub fn get_reference_value<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<u8, Error<CsE, SpiE>>
+        where
+            CS: OutputPin<Error = CsE>,
+            SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+       self.read_single_byte_from_spi(
+            cs,
+            spi,
+            RegisterAddresses::Reference as u8,
+        )
+    }
+
     fn get_accel_raw<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
