@@ -4,6 +4,7 @@ pub mod ctrl_reg_1_value;
 pub mod ctrl_reg_2_value;
 pub mod ctrl_reg_3_value;
 pub mod ctrl_reg_4_value;
+pub mod ctrl_reg_5_value;
 pub mod enabled_enum;
 pub mod int_cfg;
 pub mod int_duration_value;
@@ -25,6 +26,7 @@ use ctrl_reg_1_value::CtrlReg1Value;
 use ctrl_reg_2_value::CtrlReg2Value;
 use ctrl_reg_3_value::CtrlReg3Value;
 use ctrl_reg_4_value::CtrlReg4Value;
+use ctrl_reg_5_value::CtrlReg5Value;
 use hal::{
     blocking::spi::{Transfer, Write},
     digital::v2::OutputPin,
@@ -134,6 +136,7 @@ pub struct Lis3dh {
     ctrl_reg2: CtrlReg2Value,
     ctrl_reg3: CtrlReg3Value,
     ctrl_reg4: CtrlReg4Value,
+    ctrl_reg5: CtrlReg5Value,
     int1_ths: IntThs,
     int1_duration: IntDuration,
     int1_cfg: IntCfg,
@@ -158,6 +161,7 @@ impl Lis3dh {
     pub fn ctrl_reg4_setting(&self) -> CtrlReg4Value {
         self.ctrl_reg4
     }
+    pub fn ctrl_reg5_setting(&self) -> CtrlReg5Value { self.ctrl_reg5 }
     pub fn int_1_ths_setting(&self) -> IntThs {
         self.int1_ths
     }
@@ -184,6 +188,10 @@ impl Lis3dh {
     }
     pub fn set_ctrl_reg4_setting(&mut self, ctrl_reg4: CtrlReg4Value) {
         self.ctrl_reg4 = ctrl_reg4;
+    }
+
+    pub fn set_ctrl_reg5_setting(&mut self, ctrl_reg5: CtrlReg5Value) {
+        self.ctrl_reg5 = ctrl_reg5;
     }
     pub fn set_int1_ths_setting(&mut self, int1_ths: IntThs) {
         self.int1_ths = int1_ths;
@@ -256,6 +264,14 @@ impl Lis3dh {
             cs,
             spi,
             [
+                RegisterAddresses::CtrlReg5 as u8,
+                self.ctrl_reg5.get_raw_value(),
+            ],
+        )?;
+        self.write_to_spi(
+            cs,
+            spi,
+            [
                 RegisterAddresses::TempCfgReg as u8,
                 self.temp_cfg_reg.get_raw_value(),
             ],
@@ -310,6 +326,9 @@ impl Lis3dh {
                 .ctrl_reg4_setting()
                 .eq(&self.get_ctrl_reg_4_value(cs, spi)?)
             && self
+            .ctrl_reg5_setting()
+            .eq(&self.get_ctrl_reg_5_value(cs, spi)?)
+            && self
                 .temp_cfg_reg_setting()
                 .eq(&self.get_temp_cfg_reg(cs, spi)?)
             && self
@@ -321,6 +340,22 @@ impl Lis3dh {
             && self
                 .int_1_cfg_setting()
                 .eq(&self.get_int_1_cfg_values(cs, spi)?))
+    }
+    pub fn get_ctrl_reg_5_value<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<CtrlReg5Value, Error<CsE, SpiE>>
+        where
+            CS: OutputPin<Error = CsE>,
+            SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        let value = self.read_single_byte_from_spi(
+            cs,
+            spi,
+            RegisterAddresses::CtrlReg5 as u8,
+        )?;
+        Ok(CtrlReg5Value::from_raw_value(value))
     }
     pub fn get_ctrl_reg_4_value<CS, SPI, CsE, SpiE>(
         &mut self,
