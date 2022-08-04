@@ -143,6 +143,4 @@ mod tests {
         };
         assert_eq!(ctrl_reg_5_value.get_raw_value(), 0b1000_0100);
     }
-
-
 }

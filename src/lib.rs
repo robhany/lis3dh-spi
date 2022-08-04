@@ -161,7 +161,9 @@ impl Lis3dh {
     pub fn ctrl_reg4_setting(&self) -> CtrlReg4Value {
         self.ctrl_reg4
     }
-    pub fn ctrl_reg5_setting(&self) -> CtrlReg5Value { self.ctrl_reg5 }
+    pub fn ctrl_reg5_setting(&self) -> CtrlReg5Value {
+        self.ctrl_reg5
+    }
     pub fn int_1_ths_setting(&self) -> IntThs {
         self.int1_ths
     }
@@ -326,8 +328,8 @@ impl Lis3dh {
                 .ctrl_reg4_setting()
                 .eq(&self.get_ctrl_reg_4_value(cs, spi)?)
             && self
-            .ctrl_reg5_setting()
-            .eq(&self.get_ctrl_reg_5_value(cs, spi)?)
+                .ctrl_reg5_setting()
+                .eq(&self.get_ctrl_reg_5_value(cs, spi)?)
             && self
                 .temp_cfg_reg_setting()
                 .eq(&self.get_temp_cfg_reg(cs, spi)?)
@@ -341,14 +343,32 @@ impl Lis3dh {
                 .int_1_cfg_setting()
                 .eq(&self.get_int_1_cfg_values(cs, spi)?))
     }
+    pub fn rewrite_int1_settings<CS, SPI, CsE, SpiE>(
+        &mut self,
+        cs: &mut CS,
+        spi: &mut SPI,
+    ) -> Result<(), Error<CsE, SpiE>>
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    {
+        self.write_to_spi(
+            cs,
+            spi,
+            [
+                RegisterAddresses::Int1Cfg as u8,
+                self.int1_cfg.get_raw_value(),
+            ],
+        )
+    }
     pub fn get_ctrl_reg_5_value<CS, SPI, CsE, SpiE>(
         &mut self,
         cs: &mut CS,
         spi: &mut SPI,
     ) -> Result<CtrlReg5Value, Error<CsE, SpiE>>
-        where
-            CS: OutputPin<Error = CsE>,
-            SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
+    where
+        CS: OutputPin<Error = CsE>,
+        SPI: Transfer<u8, Error = SpiE> + Write<u8, Error = SpiE>,
     {
         let value = self.read_single_byte_from_spi(
             cs,
