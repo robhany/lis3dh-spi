@@ -140,32 +140,59 @@ pub struct Lis3dh {
 }
 
 impl Lis3dh {
-    fn ctrl_reg0_setting(&self) -> CtrlReg0Value {
+    pub fn ctrl_reg0_setting(&self) -> CtrlReg0Value {
         self.ctrl_reg0
     }
-    fn temp_cfg_reg_setting(&self) -> TempCfgRegValue {
+    pub fn temp_cfg_reg_setting(&self) -> TempCfgRegValue {
         self.temp_cfg_reg
     }
-    fn ctrl_reg1_setting(&self) -> CtrlReg1Value {
+    pub fn ctrl_reg1_setting(&self) -> CtrlReg1Value {
         self.ctrl_reg1
     }
-    fn ctrl_reg2_setting(&self) -> CtrlReg2Value {
+    pub fn ctrl_reg2_setting(&self) -> CtrlReg2Value {
         self.ctrl_reg2
     }
-    fn ctrl_reg3_setting(&self) -> CtrlReg3Value {
+    pub fn ctrl_reg3_setting(&self) -> CtrlReg3Value {
         self.ctrl_reg3
     }
-    fn ctrl_reg4_setting(&self) -> CtrlReg4Value {
+    pub fn ctrl_reg4_setting(&self) -> CtrlReg4Value {
         self.ctrl_reg4
     }
-    fn int_1_ths_setting(&self) -> IntThs {
+    pub fn int_1_ths_setting(&self) -> IntThs {
         self.int1_ths
     }
-    fn int_1_duration_setting(&self) -> IntDuration {
+    pub fn int_1_duration_setting(&self) -> IntDuration {
         self.int1_duration
     }
-    fn int_1_cfg_setting(&self) -> IntCfg {
+    pub fn int_1_cfg_setting(&self) -> IntCfg {
         self.int1_cfg
+    }
+    pub fn set_ctrl_reg0_setting(&mut self, ctrl_reg0: CtrlReg0Value) {
+        self.ctrl_reg0 = ctrl_reg0;
+    }
+    pub fn set_temp_cfg_reg_setting(&mut self, temp_cfg_reg: TempCfgRegValue) {
+        self.temp_cfg_reg = temp_cfg_reg;
+    }
+    pub fn set_ctrl_reg1_setting(&mut self, ctrl_reg1: CtrlReg1Value) {
+        self.ctrl_reg1 = ctrl_reg1;
+    }
+    pub fn set_ctrl_reg2_setting(&mut self, ctrl_reg2: CtrlReg2Value) {
+        self.ctrl_reg2 = ctrl_reg2;
+    }
+    pub fn set_ctrl_reg3_setting(&mut self, ctrl_reg3: CtrlReg3Value) {
+        self.ctrl_reg3 = ctrl_reg3;
+    }
+    pub fn set_ctrl_reg4_setting(&mut self, ctrl_reg4: CtrlReg4Value) {
+        self.ctrl_reg4 = ctrl_reg4;
+    }
+    pub fn set_int1_ths_setting(&mut self, int1_ths: IntThs) {
+        self.int1_ths = int1_ths;
+    }
+    pub fn set_int1_duration_setting(&mut self, int1_duration: IntDuration) {
+        self.int1_duration = int1_duration;
+    }
+    pub fn set_int1_cfg_setting(&mut self, int1_cfg: IntCfg) {
+        self.int1_cfg = int1_cfg;
     }
     pub fn set_output_data_rate(
         &mut self,
