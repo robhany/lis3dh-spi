@@ -3,7 +3,7 @@ use num_traits::FromPrimitive;
 
 #[derive(FromPrimitive)]
 #[repr(u8)]
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum XEn {
     XAxisDisabled,
     XAxisEnabled,
@@ -17,7 +17,7 @@ impl Default for XEn {
 
 const Y_EN_BIT_OFFSET: u8 = 1;
 #[repr(u8)]
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum YEn {
     YAxisDisabled,
     YAxisEnabled,
@@ -31,7 +31,7 @@ impl Default for YEn {
 
 const Z_EN_BIT_OFFSET: u8 = 2;
 #[repr(u8)]
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ZEn {
     ZAxisDisabled,
     ZAxisEnabled,
@@ -45,7 +45,7 @@ impl Default for ZEn {
 
 const L_P_EN_BIT_OFFSET: u8 = 3;
 #[repr(u8)]
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum LPEn {
     HighResolutionNormalMode,
     LowPowerEnabled,
@@ -59,7 +59,7 @@ impl Default for LPEn {
 
 const DATA_RATE_SELECTION_BIT_OFFSET: u8 = 4;
 #[repr(u8)]
-#[derive(Copy, Clone, Debug, FromPrimitive, ToPrimitive, PartialEq)]
+#[derive(Copy, Clone, Debug, FromPrimitive, ToPrimitive, PartialEq, Eq)]
 pub enum ODR {
     PowerDownMode = 0_u8,
     Hz1,
@@ -79,7 +79,7 @@ impl Default for ODR {
     }
 }
 
-#[derive(Clone, Copy, Default, PartialEq)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub struct CtrlReg1Value {
     x_en: XEn,
     y_en: YEn,
@@ -89,16 +89,21 @@ pub struct CtrlReg1Value {
 }
 
 impl CtrlReg1Value {
-    pub(super) fn set_output_data_rate(&mut self, output_data_rate: ODR) {
-        self.output_data_rate = output_data_rate;
+    pub fn set_x_en(&mut self, x_en: XEn) {
+        self.x_en = x_en;
     }
-
-    pub(super) fn set_l_p_en(&mut self, l_p_en: LPEn) {
+    pub fn set_y_en(&mut self, y_en: YEn) {
+        self.y_en = y_en;
+    }
+    pub fn set_z_en(&mut self, z_en: ZEn) {
+        self.z_en = z_en;
+    }
+    pub fn set_l_p_en(&mut self, l_p_en: LPEn) {
         self.l_p_en = l_p_en;
     }
-}
-
-impl CtrlReg1Value {
+    pub fn set_output_data_rate(&mut self, output_data_rate: ODR) {
+        self.output_data_rate = output_data_rate;
+    }
     pub fn x_en(&self) -> XEn {
         self.x_en
     }
@@ -114,7 +119,6 @@ impl CtrlReg1Value {
     pub fn output_data_rate(&self) -> ODR {
         self.output_data_rate
     }
-
     pub(super) fn get_raw_value(&self) -> u8 {
         (self.output_data_rate as u8) << DATA_RATE_SELECTION_BIT_OFFSET
             | (self.l_p_en as u8) << L_P_EN_BIT_OFFSET
@@ -122,7 +126,6 @@ impl CtrlReg1Value {
             | (self.y_en as u8) << Y_EN_BIT_OFFSET
             | self.x_en as u8
     }
-
     pub(super) fn from_raw_value(value: u8) -> Self {
         let x_en = if value & 1 == 1 {
             XEn::XAxisEnabled
